@@ -15,7 +15,7 @@ export default function App() {
   return (
     <MantineProvider>
       <Notifications position="top-right" />
-      <Router />
+        <Router />
     </MantineProvider>
   );
 }

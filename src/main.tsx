@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { MantineProvider } from "@mantine/core";
+import { config } from "./config";
 import "@mantine/core/styles.css";
 
 import { MsalProvider } from "@azure/msal-react";
@@ -10,9 +10,9 @@ import App from "./App";
 
 const pca = new PublicClientApplication({
   auth: {
-    clientId: import.meta.env.VITE_AAD_CLIENT_ID,
-    authority: import.meta.env.VITE_AAD_AUTHORITY,
-    redirectUri: "http://localhost:5173/auth/callback",
+    clientId: config.auth.clientId,
+    authority: config.auth.authority,
+    redirectUri: config.auth.redirectUri,
   },
   cache: {
     cacheLocation: "sessionStorage",

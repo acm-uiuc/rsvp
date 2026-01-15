@@ -1,11 +1,11 @@
 import {
-    BrowserAuthError,
+  BrowserAuthError,
   InteractionRequiredAuthError,
   InteractionStatus,
 } from "@azure/msal-browser";
 import { useMsal } from "@azure/msal-react";
 import { MantineProvider } from "@mantine/core";
-import { 
+import {
   createContext,
   ReactNode,
   useContext,
@@ -14,6 +14,7 @@ import {
   useCallback,
 } from "react";
 import FullScreenLoader from "./LoadingScreen";
+import { config } from "../../config";
 
 type AuthUser = {
   email?: string;
@@ -23,6 +24,7 @@ type AuthUser = {
 interface AuthContextType {
   isLoggedIn: boolean;
   user: AuthUser | null;
+  loading: boolean; 
   login: () => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => Promise<string | null>;
@@ -33,28 +35,44 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { instance, accounts, inProgress } = useMsal();
+  
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
     if (inProgress !== InteractionStatus.None) return;
 
-    instance.handleRedirectPromise().then((result) => {
-      const account = result?.account ?? accounts[0];
-      if (!account) return;
+    const checkAuth = async () => {
+      try {
+        const result = await instance.handleRedirectPromise();
+        const account = result?.account ?? accounts[0];
 
-      instance.setActiveAccount(account);
-      setUser({
-        email: account.username,
-        name: account.name ?? undefined,
-      });
-      setIsLoggedIn(true);
-    });
+        if (account) {
+          instance.setActiveAccount(account);
+          setUser({
+            email: account.username,
+            name: account.name ?? undefined,
+          });
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      } catch (e) {
+        console.error("Auth check failed", e);
+      } finally {
+        setIsAuthReady(true);
+      }
+    };
+
+    checkAuth();
   }, [instance, accounts, inProgress]);
 
   const login = useCallback(async () => {
     await instance.loginRedirect({
-      scopes: ["openid", "profile", "email"],
+      scopes: ["openid", "profile", "email", "User.Read"],
     });
   }, [instance]);
 
@@ -70,8 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const tokenRequest = {
       account,
-      scopes: ["User.Read"], 
-      authority: import.meta.env.VITE_AAD_AUTHORITY,
+      scopes: ["User.Read"],
+      authority: config.auth.authority,
       forceRefresh: false,
     };
 
@@ -81,7 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       if (err instanceof InteractionRequiredAuthError) {
         try {
-          // ✅ Fallback to Popup (instead of Redirect) to match your snippet
           const res = await instance.acquireTokenPopup(tokenRequest);
           return res.accessToken;
         } catch (popupError) {
@@ -102,17 +119,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [instance]);
 
+  const isLoading = inProgress !== InteractionStatus.None || !isAuthReady;
+
   return (
     <AuthContext.Provider
       value={{
         isLoggedIn,
         user,
+        loading: isLoading, 
         login,
         logout,
         getToken,
       }}
     >
-      {inProgress !== InteractionStatus.None ? (
+      {isLoading ? (
         <MantineProvider>
           <FullScreenLoader />
         </MantineProvider>
@@ -122,4 +142,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-

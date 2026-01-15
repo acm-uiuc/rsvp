@@ -14,6 +14,8 @@ import { HomePage } from "./pages/Home.page";
 import { LoginPage } from "./pages/Login.page";
 import { LogoutPage } from "./pages/Logout.page";
 import { MyRsvpsPage } from "./pages/rsvps/MyRsvps.page";
+import { Center } from "@mantine/core";
+import FullScreenLoader from "./components/AuthContext/LoadingScreen";
 
 const LoginRedirect: React.FC = () => {
   const location = useLocation();
@@ -103,8 +105,14 @@ const authenticatedRouter = createBrowserRouter([
 ]);
 
 export const Router: React.FC = () => {
-  const { isLoggedIn } = useAuth();
-  
+  const { isLoggedIn, loading } = useAuth();
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <FullScreenLoader />
+      </Center>
+    );
+  }
   const router = isLoggedIn ? authenticatedRouter : unauthenticatedRouter;
 
   return <RouterProvider router={router} />;
