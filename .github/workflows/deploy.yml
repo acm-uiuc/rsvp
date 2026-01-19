@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fix-rsvp-frontend
   pull_request:
     branches:
       - main
