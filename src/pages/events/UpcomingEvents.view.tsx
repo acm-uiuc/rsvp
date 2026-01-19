@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { 
   Title, Text, Container, SimpleGrid, Card, Badge, Button, Group, Stack, 
-  Loader, Alert, ThemeIcon, Anchor, Box, Modal 
+  Loader, Alert, Box, Modal 
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { IconCalendar, IconMapPin, IconAlertCircle, IconTicket, IconUser } from '@tabler/icons-react';
+import { IconAlertCircle, IconTicket } from '@tabler/icons-react';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
 
@@ -52,15 +52,6 @@ export function UpcomingEventsView({ getEvents, onRsvp }: UpcomingEventsViewProp
     } finally {
       setRsvpLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Date TBA";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid Date";
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-    }).format(date);
   };
 
   return (
