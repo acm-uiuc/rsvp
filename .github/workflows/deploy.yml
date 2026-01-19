@@ -58,3 +58,21 @@ jobs:
       - name: Update PR with Preview URL
         if: success() && github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.job-summary.outputs.job-summary }}
+          edit-mode: "replace"
+
+      - name: Update PR with Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            😢 **Cloudflare Pages - Deployment failed**
+            Please check the workflow logs for details.
+          edit-mode: "replace"
