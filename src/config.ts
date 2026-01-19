@@ -8,6 +8,13 @@ interface AppConfig {
   };
 }
 
+const getRedirectUri = () => {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/auth/callback`;
+  }
+  return ''; 
+};
+
 const ENVIRONMENTS: Record<'local-dev' | 'dev' | 'prod', AppConfig> = {
   'local-dev': {
     apiBaseUrl: 'https://core.aws.qa.acmuiuc.org', 
@@ -25,7 +32,7 @@ const ENVIRONMENTS: Record<'local-dev' | 'dev' | 'prod', AppConfig> = {
     auth: {
       authority: 'https://login.microsoftonline.com/44467e6f-462c-4ea2-823f-7800de5434e3',
       clientId: '7924ef11-be10-413d-aaa9-f1d634e85a26',
-      redirectUri: 'https://rsvp.qa.acmuiuc.org/auth/callback'
+      redirectUri: getRedirectUri(),
     }
   },
 
