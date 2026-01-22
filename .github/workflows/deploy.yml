@@ -35,7 +35,7 @@ jobs:
               env:
                   VITE_RUN_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
             - name: Deploy to Cloudflare
-              uses: acm-uiuc/actions/.github/workflows/cloudflare-pages-deploy.yml@main
+              uses: acm-uiuc/actions/.github/actions/cloudflare-pages-deploy@main
               with:
                   build-directory: build/
                   project-name: ${{ vars.CLOUDFLARE_PROJECT_NAME }}
