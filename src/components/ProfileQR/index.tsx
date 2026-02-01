@@ -21,7 +21,7 @@ export function CheckInModal({ opened, onClose }: CheckInModalProps) {
         setLoading(true);
         setError(null);
         try {
-          const t = await getToken();
+          const t = user?.email;
           if (!t) throw new Error("Could not retrieve authentication token.");
           setToken(t);
         } catch (err) {
