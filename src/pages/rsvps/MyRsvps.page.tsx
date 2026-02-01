@@ -45,7 +45,6 @@ export function MyRsvpsPage() {
         
         const eventsMap: Record<string, Event> = {};
         eventsData.forEach(e => { eventsMap[e.id] = e; });
-        console.log(rsvpData);
         return rsvpData.map(r => {
           const event = eventsMap[r.eventId];
           
@@ -115,7 +114,6 @@ export function MyRsvpsPage() {
     }
 
     apiCache.invalidate('rsvps:my');
-    apiCache.invalidate('events:upcoming'); 
   }, [getToken]);
 
   return (
