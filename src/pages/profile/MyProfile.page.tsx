@@ -28,7 +28,6 @@ export function MyProfilePage() {
 
         if (!response.ok) {
           if (response.status === 404) {
-            // Profile doesn't exist yet - redirect to first-time setup if not already there
             if (!isFirstTime) {
               navigate("/profile?firstTime=true", { replace: true });
             }
@@ -36,7 +35,6 @@ export function MyProfilePage() {
           }
           
           if (response.status === 400) {
-            // Validation error or incomplete profile
             const errData = await response.text();
             console.error('Profile validation error:', errData);
             if (!isFirstTime) {
@@ -50,7 +48,7 @@ export function MyProfilePage() {
 
         return await response.json();
       },
-      CacheTTL.MEDIUM // Cache for 5 minutes
+      CacheTTL.MEDIUM 
     );
   }, [getToken, navigate, isFirstTime]);
 

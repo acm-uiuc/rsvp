@@ -21,7 +21,6 @@ export function MyRsvpsPage() {
         const token = await getToken();
         if (!token) throw new Error("Unable to authenticate.");
 
-        // Fetch RSVPs and events in parallel
         const [rsvpRes, eventsRes] = await Promise.all([
           fetch(config.apiBaseUrl + '/api/v1/rsvp/me', {
             headers: { 
@@ -78,7 +77,7 @@ export function MyRsvpsPage() {
         }).sort((a, b) => {
           const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
           const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
-          return dateB - dateA; // Most recent/upcoming first
+          return dateB - dateA; 
         });
       },
       CacheTTL.MEDIUM 
@@ -104,7 +103,6 @@ export function MyRsvpsPage() {
     if (!response.ok) {
       const txt = await response.text();
       
-      // Handle specific error cases
       if (response.status === 404) {
         throw new Error('RSVP not found. It may have already been cancelled.');
       }
@@ -116,9 +114,8 @@ export function MyRsvpsPage() {
       throw new Error(txt || 'Failed to cancel RSVP');
     }
 
-    // Invalidate caches after successful cancellation
     apiCache.invalidate('rsvps:my');
-    apiCache.invalidate('events:upcoming'); // Event capacity may have changed
+    apiCache.invalidate('events:upcoming'); 
   }, [getToken]);
 
   return (

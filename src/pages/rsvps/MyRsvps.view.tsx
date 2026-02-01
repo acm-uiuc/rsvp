@@ -61,7 +61,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
   const handleRefreshClick = async () => {
     setLoading(true);
     try {
-      // Call the new refresh function passed from the parent
       const freshData = await onRefresh();
       setRsvps(freshData);
     } catch (error) {
@@ -85,12 +84,10 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
     try {
       await onCancelRsvp(selectedRsvp.eventId, token);
 
-      // Remove from local state
       setRsvps(prev => prev.filter(r => r.eventId !== selectedRsvp.eventId));
 
       closeCancelModal();
 
-      // Show success message
       setTimeout(() => {
         alert(`Successfully cancelled RSVP for ${selectedRsvp.title}`);
       }, 100);
@@ -127,12 +124,11 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             <Title order={2}>My RSVPs</Title>
             <Text c="dimmed">View and manage your event registrations</Text>
           </Box>
-          <Group gap="xs"> {/* Use gap="xs", "sm", or "md" to control button spacing */}
+          <Group gap="xs"> 
             <Button variant="light" onClick={navigateEvents} leftSection={<IconTicket size={16} />}>
               Browse Events
             </Button>
             
-            {/* Assuming you meant a Refresh button for the second one? */}
             <Button variant="outline" onClick={handleRefreshClick} leftSection={<IconRefresh size={16} />}>
               Refresh
             </Button>
@@ -172,7 +168,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         </Card>
       ) : (
         <Stack gap="xl">
-          {/* Upcoming Events */}
           {upcomingRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -247,7 +242,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             </Box>
           )}
 
-          {/* Past Events */}
           {pastRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -301,7 +295,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         </Stack>
       )}
 
-      {/* Cancel RSVP Modal */}
       <Modal
         opened={cancelModalOpened}
         onClose={() => !cancelLoading && closeCancelModal()}

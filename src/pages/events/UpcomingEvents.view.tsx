@@ -75,7 +75,6 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     try {
       await onRsvp(selectedEvent, token);
       
-      // Add to RSVPed events set
       setRsvpedEvents(prev => new Set(prev).add(selectedEvent.id));
       
       close();
@@ -83,7 +82,6 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     } catch (e: any) {
       console.error(e);
       
-      // Handle specific error cases
       if (e.message?.includes('400') || e.message?.toLowerCase().includes('profile')) {
         setRsvpError('profile');
       } else if (e.message?.toLowerCase().includes('full') || e.message?.toLowerCase().includes('capacity')) {
@@ -235,7 +233,6 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
         </SimpleGrid>
       )}
 
-      {/* RSVP Modal */}
       <Modal 
         opened={opened} 
         onClose={() => !rsvpLoading && close()} 

@@ -12,7 +12,7 @@ import {
   IconSchool, IconStar, IconApple, IconQrcode 
 } from '@tabler/icons-react';
 import { config } from '../../config';
-import { RsvpProfile } from '../../common/types/rsvp';
+import { RsvpProfile, SCHOOL_YEARS, MAJORS, COMMON_INTERESTS } from '../../common/types/rsvp';
 import { CheckInModal } from '../../components/ProfileQR';
 
 interface MyProfileViewProps {
@@ -20,21 +20,6 @@ interface MyProfileViewProps {
   updateProfile: (profile: Omit<RsvpProfile, 'updatedAt'>, turnstileToken: string) => Promise<void>;
   isFirstTime: boolean;
 }
-
-const SCHOOL_YEARS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
-
-// ... (Keep MAJORS, COMMON_INTERESTS, and DIETARY_RESTRICTIONS_OPTIONS arrays exactly as they were) ...
-const MAJORS = [
-  "ACES Undeclared", "Accountancy", "Computer Science", "Electrical Engineering", "Mechanical Engineering", 
-  // ... (Abbreviated for brevity, keep your full list) ...
-  "Other"
-];
-
-const COMMON_INTERESTS = [
-  "AI/Machine Learning", "Web Development", "Mobile Development", "Cybersecurity", "Game Development",
-  "Data Science", "Cloud Computing", "Robotics", "Blockchain", "UI/UX Design"
-];
-
 const DIETARY_RESTRICTIONS_OPTIONS = [
   "Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Nut Allergy", "Shellfish Allergy", "Halal", "Kosher", "Lactose Intolerant", "Pescatarian"
 ];
@@ -46,19 +31,16 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(isFirstTime);
 
-  // Form state
   const [schoolYear, setSchoolYear] = useState<string>('');
   const [intendedMajor, setIntendedMajor] = useState<string>('');
   const [interests, setInterests] = useState<string[]>([]);
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
 
-  // Modal and turnstile state
   const [opened, { open, close }] = useDisclosure(false);
   const [welcomeOpened, { open: openWelcome, close: closeWelcome }] = useDisclosure(isFirstTime);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  // QR Modal State
   const [qrModalOpened, { open: openQrModal, close: closeQrModal }] = useDisclosure(false);
 
   useEffect(() => {
@@ -76,7 +58,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
         setDietaryRestrictions(data.dietaryRestrictions);
         setError(null);
       } else if (!isFirstTime) {
-        // Explicitly set error if no data found and not in setup mode
         setError("Profile not found.");
       }
     } catch (err: any) {
@@ -165,7 +146,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
     return Math.round((completed / total) * 100);
   };
 
-  // 1. Critical Error State: If not loading, not first time, and no profile
   if (!loading && !isFirstTime && !profile) {
     return (
       <Container size="md" py="xl">
@@ -186,7 +166,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
 
   return (
     <Container size="md" py="xl">
-      {/* 2. QR Code Modal Component */}
       <CheckInModal opened={qrModalOpened} onClose={closeQrModal} />
 
       <Stack gap="lg">
@@ -196,7 +175,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
             <Text c="dimmed" size="sm">Manage your personal information and preferences</Text>
           </Box>
           
-          {/* 3. Header Actions (Edit & QR) */}
           {!isEditing && profile && (
             <Group gap="xs">
                <Button 
@@ -242,7 +220,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
             <Stack gap="md">
               {isEditing ? (
                 <>
-                  {/* ... (Keep existing Editing Form JSX exactly as is) ... */}
                   <Select
                     label={<Group gap="xs"><IconSchool size={16} /><Text size="sm" fw={500}>School Year</Text></Group>}
                     placeholder="Select your year"
@@ -308,7 +285,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
                 </>
               ) : (
                 <>
-                  {/* ... (Keep existing View Mode JSX exactly as is) ... */}
                   <Box>
                     <Group gap="xs" mb={4}>
                       <IconSchool size={16} stroke={1.5} />

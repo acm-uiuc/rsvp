@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Stack, Text, Loader, Center, Box, Button } from '@mantine/core';
 import QRCode from 'react-qr-code';
-import { useAuth } from '../AuthContext'; // Adjust path as needed
+import { useAuth } from '../AuthContext'; 
 import { IconAlertCircle } from '@tabler/icons-react';
 
 interface CheckInModalProps {
@@ -33,7 +33,6 @@ export function CheckInModal({ opened, onClose }: CheckInModalProps) {
       };
       fetchToken();
     } else {
-      // Security: Clear token when modal closes
       setToken(null);
       setError(null);
     }
@@ -53,7 +52,6 @@ export function CheckInModal({ opened, onClose }: CheckInModalProps) {
             <Loader size="xl" />
           </Center>
         ) : error ? (
-          // ❌ Replaced <Alert> with this Modal Error View
           <>
             <IconAlertCircle size={48} color="red" style={{ alignSelf: 'center' }} />
             <Text ta="center" fw={500}>Generation Failed</Text>
@@ -65,7 +63,6 @@ export function CheckInModal({ opened, onClose }: CheckInModalProps) {
             </Button>
           </>
         ) : token ? (
-          // ✅ Success View
           <>
             <Box p="md" bg="white" style={{ borderRadius: 8 }}>
               <QRCode 

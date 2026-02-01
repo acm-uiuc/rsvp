@@ -32,10 +32,8 @@ export function LoginPage() {
           if (response.status === 400 || response.status === 404) {
             navigate("/profile?firstTime=true", { replace: true });
           } else if (response.ok) {
-            // Profile exists, redirect to returnTo or home
             navigate(returnTo || "/home", { replace: true });
           } else {
-            // Other errors, send to profile setup to be safe
             navigate("/profile?firstTime=true", { replace: true });
           }
         } catch (error) {

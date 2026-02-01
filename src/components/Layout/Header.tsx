@@ -44,7 +44,7 @@ export function Header({ opened, toggle }: HeaderProps) {
         <Menu.Dropdown>
           <Menu.Label>My Account</Menu.Label>
           <Menu.Item leftSection={<IconUser style={{ width: rem(14), height: rem(14) }} />}
-          onClick={() => navigate("/profile", { replace: true })}
+            onClick={() => navigate("/profile", { replace: true })}
           >
             Profile
           </Menu.Item>

@@ -44,9 +44,7 @@ export function UpcomingEventsPage() {
     if (!response.ok) {
       const errData = await response.text();
       
-      // Handle specific error cases
       if (response.status === 400) {
-        // Check if it's a profile error
         if (errData.toLowerCase().includes('profile') || 
             errData.toLowerCase().includes('complete') ||
             errData.toLowerCase().includes('required')) {

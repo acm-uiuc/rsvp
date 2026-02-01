@@ -1,8 +1,3 @@
-/**
- * API Cache Utility
- * Provides caching with TTL (Time To Live) support to reduce unnecessary API calls
- */
-
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -28,7 +23,6 @@ class ApiCache {
     const age = now - entry.timestamp;
 
     if (age > entry.ttl) {
-      // Cache expired, remove it
       this.cache.delete(key);
       return null;
     }
@@ -105,8 +99,8 @@ class ApiCache {
 export const apiCache = new ApiCache();
 
 export const CacheTTL = {
-  SHORT: 1 * 60 * 1000,      // 1 minute
-  MEDIUM: 5 * 60 * 1000,     // 5 minutes
-  LONG: 15 * 60 * 1000,      // 15 minutes
-  VERY_LONG: 60 * 60 * 1000, // 1 hour
+  SHORT: 1 * 60 * 1000,      
+  MEDIUM: 5 * 60 * 1000,     
+  LONG: 15 * 60 * 1000,      
+  VERY_LONG: 60 * 60 * 1000, 
 } as const;
