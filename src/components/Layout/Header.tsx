@@ -10,6 +10,8 @@ import {
 } from "@mantine/core";
 import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
 import { useAuth } from "../AuthContext";
+import { useNavigate } from "react-router-dom";
+import LogoBadge from "../Logo";
 
 interface HeaderProps {
   opened: boolean;
@@ -18,12 +20,13 @@ interface HeaderProps {
 
 export function Header({ opened, toggle }: HeaderProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Group h="100%" px="md" justify="space-between">
       <Group>
         <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-        <Title order={3} c="blue">ACM @ UIUC</Title>
+        <LogoBadge size="1em" linkTo="/" showText={true} />
       </Group>
 
       <Menu shadow="md" width={200}>
@@ -40,7 +43,9 @@ export function Header({ opened, toggle }: HeaderProps) {
 
         <Menu.Dropdown>
           <Menu.Label>My Account</Menu.Label>
-          <Menu.Item leftSection={<IconUser style={{ width: rem(14), height: rem(14) }} />}>
+          <Menu.Item leftSection={<IconUser style={{ width: rem(14), height: rem(14) }} />}
+          onClick={() => navigate("/profile", { replace: true })}
+          >
             Profile
           </Menu.Item>
           <Menu.Divider />

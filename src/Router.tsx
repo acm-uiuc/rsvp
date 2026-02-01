@@ -16,6 +16,7 @@ import { LogoutPage } from "./pages/Logout.page";
 import { MyRsvpsPage } from "./pages/rsvps/MyRsvps.page";
 import { Center } from "@mantine/core";
 import FullScreenLoader from "./components/AuthContext/LoadingScreen";
+import { MyProfilePage } from "./pages/profile/MyProfile.page";
 
 const LoginRedirect: React.FC = () => {
   const location = useLocation();
@@ -95,6 +96,10 @@ const authenticatedRouter = createBrowserRouter([
       {
         path: "/my-rsvps",
         element: <MyRsvpsPage />,
+      },
+       {
+        path: "/profile",
+        element: <MyProfilePage />,
       },
       {
         path: "*",

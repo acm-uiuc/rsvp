@@ -6,9 +6,11 @@ import {
   Alert,
   Title,
   ThemeIcon,
-  Stack
+  Stack,
+  Center
 } from "@mantine/core";
 import { IconLock, IconCommand } from "@tabler/icons-react";
+import LogoBadge from "../Logo";
 
 import { AcmLoginButton } from "./AcmLoginButton";
 
@@ -16,21 +18,12 @@ export function LoginComponent(props: PaperProps) {
 
   return (
     <Paper radius="md" p="xl" withBorder {...props}>
-      <Stack align="center" gap="md" className="mb-6">
-        {/* Placeholder for missing brand image */}
-        <ThemeIcon size={64} radius="md" variant="light" color="blue">
-            <IconCommand size={40} />
-        </ThemeIcon>
-        
-        <Title order={3} className="text-center">
-            ACM @ UIUC
-        </Title>
-
-        <Text size="lg" fw={500} className="text-center text-gray-700">
-          RSVP to ACM Events
-        </Text>
-      </Stack>
-
+        <Stack align="center" gap="md" className="mb-6">
+          <LogoBadge size="1.7em" showText={false} />
+          <Text size="lg" fw={500} className="text-center text-gray-700">
+            Welcome to ACM RSVP Portal 
+          </Text>
+        </Stack>
       <Alert
         title={<Title order={5}>Authorized Users Only</Title>}
         icon={<IconLock />}
