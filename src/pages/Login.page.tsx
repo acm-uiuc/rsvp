@@ -21,14 +21,27 @@ export function LoginPage() {
       if (isLoggedIn && user) {
         const authToken = await getToken();
         try {
-          console.log("Checking");
           const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/profile/me`, {
             method: 'DELETE',
             headers: {
               'x-uiuc-token': authToken || '',
             }
           });
-          console.log(response.status);
+          const res = await fetch('https://www.acm.illinois.edu/api/v1/syncIdentity/isRequired', {
+            method: 'GET',
+            headers: {
+              'x-uiuc-token': authToken || '',
+            }
+          });
+          const syncRequired = await res.json();
+          if (syncRequired?.syncRequired) {
+            await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
+              method: 'POST',
+              headers: {
+                'x-uiuc-token': authToken || '',
+              }
+            });
+          }
           if (response.status === 400 || response.status === 404) {
             navigate("/profile?firstTime=true", { replace: true });
           } else if (response.ok) {
