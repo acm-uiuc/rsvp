@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { 
   Title, 
   Text, 
@@ -13,10 +14,54 @@ import { IconCalendarEvent, IconTicket, IconSettings } from '@tabler/icons-react
 import { useAuth } from '../components/AuthContext';
 import { MainLayout } from '../components/Layout/index';
 import { useNavigate } from 'react-router-dom';
+import { config } from '../config';
 
 export function HomePage() {
-  const { user } = useAuth();
+  const { user, isLoggedIn, getToken } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+      const checkProfile = async () => {
+        if (isLoggedIn && user) {
+          const authToken = await getToken();
+          try {
+            const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/profile/me`, {
+              method: 'DELETE',
+              headers: {
+                'x-uiuc-token': authToken || '',
+              }
+            });
+            const res = await fetch('https://www.acm.illinois.edu/api/v1/syncIdentity/isRequired', {
+              method: 'GET',
+              headers: {
+                'x-uiuc-token': authToken || '',
+              }
+            });
+            const syncRequired = await res.json();
+            console.log(syncRequired);
+            if (syncRequired?.syncRequired) {
+              const syncRes = await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
+                method: 'POST',
+                headers: {
+                  'x-uiuc-token': authToken || '',
+                }
+              });
+              console.log(syncRes);
+            }
+            if (response.status === 400 || response.status === 404) {
+              navigate("/profile?firstTime=true", { replace: true });
+            } else {
+              navigate("/profile?firstTime=true", { replace: true });
+            }
+          } catch (error) {
+            console.error("Error checking profile:", error);
+            navigate("/profile?firstTime=true");
+          }
+        }
+      };
+      
+      checkProfile();
+    }, [isLoggedIn, user, navigate, getToken]);
 
   const actions = [
     { title: 'Upcoming Events', icon: IconCalendarEvent, color: 'blue', desc: 'Browse and RSVP to corporate events', path: '/events' },

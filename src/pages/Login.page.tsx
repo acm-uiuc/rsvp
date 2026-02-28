@@ -34,13 +34,15 @@ export function LoginPage() {
             }
           });
           const syncRequired = await res.json();
+          console.log(syncRequired);
           if (syncRequired?.syncRequired) {
-            await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
+            const syncRes = await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
               method: 'POST',
               headers: {
                 'x-uiuc-token': authToken || '',
               }
             });
+            console.log(syncRes);
           }
           if (response.status === 400 || response.status === 404) {
             navigate("/profile?firstTime=true", { replace: true });
