@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Title, Text, Container, SimpleGrid, Card, Badge, Button, Group, Stack, 
-  Loader, Alert, Box, Modal, Divider
+  Loader, Alert, Box, Modal, Divider, TextInput
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { 
   IconAlertCircle, IconTicket, IconCalendar, IconClock, 
-  IconMapPin, IconRefresh, IconCheck 
+  IconMapPin, IconRefresh, IconCheck, IconSearch
 } from '@tabler/icons-react';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
@@ -25,6 +25,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rsvpedEvents, setRsvpedEvents] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
 
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -48,6 +49,16 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     }
   };
 
+  const filteredEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return events;
+    return events.filter(e =>
+      e.title?.toLowerCase().includes(q) ||
+      e.description?.toLowerCase().includes(q) ||
+      e.location?.toLowerCase().includes(q)
+    );
+  }, [events, search]);
+
   const handleRsvpClick = (event: Event) => {
     setSelectedEvent(event);
     setRsvpError(null);
@@ -57,7 +68,6 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
   const handleRefreshClick = async () => {
     setLoading(true);
     try {
-      // Call the new refresh function passed from the parent
       const freshData = await onRefresh();
       setEvents(freshData);
     } catch (error) {
@@ -74,14 +84,10 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     
     try {
       await onRsvp(selectedEvent, token);
-      
       setRsvpedEvents(prev => new Set(prev).add(selectedEvent.id));
-      
       close();
-      
     } catch (e: any) {
       console.error(e);
-      
       if (e.message?.includes('400') || e.message?.toLowerCase().includes('profile')) {
         setRsvpError('profile');
       } else if (e.message?.toLowerCase().includes('full') || e.message?.toLowerCase().includes('capacity')) {
@@ -104,20 +110,13 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
   };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   return (
@@ -128,14 +127,19 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
             <Title order={2}>Upcoming Events</Title>
             <Text c="dimmed">Discover and RSVP to events hosted by ACM @ UIUC.</Text>
           </Box>
-          <Group gap="xs"> 
-            <Button variant="outline" onClick={handleRefreshClick} leftSection={<IconRefresh size={16} />}>
-              Refresh
-            </Button>
-          </Group>
+          <Button variant="outline" onClick={handleRefreshClick} leftSection={<IconRefresh size={16} />}>
+            Refresh
+          </Button>
         </Group>
+
+        <TextInput
+          placeholder="Search by name, description, or location..."
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          radius="md"
+        />
       </Stack>
-      
 
       {error && (
         <Alert 
@@ -154,83 +158,94 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
         <Group justify="center" py="xl">
           <Loader size="lg" type="dots" />
         </Group>
-      ) : events.length === 0 ? (
+      ) : filteredEvents.length === 0 ? (
         <Card shadow="sm" padding="xl" radius="md" withBorder>
           <Stack align="center" gap="md" py="xl">
             <IconCalendar size={48} stroke={1.5} color="gray" />
-            <Title order={3} c="dimmed">No Upcoming Events</Title>
+            <Title order={3} c="dimmed">
+              {search ? 'No matching events' : 'No Upcoming Events'}
+            </Title>
             <Text c="dimmed" ta="center">
-              Check back soon for new events and workshops!
+              {search ? `No events found for "${search}".` : 'Check back soon for new events and workshops!'}
             </Text>
+            {search && (
+              <Button variant="subtle" onClick={() => setSearch('')}>
+                Clear search
+              </Button>
+            )}
           </Stack>
         </Card>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {events.map((event) => {
-            const isRsvped = rsvpedEvents.has(event.id);
-            
-            return (
-              <Card key={event.id} shadow="sm" padding="lg" radius="md" withBorder>
-                <Stack gap="sm" h="100%">
-                  <Box style={{ flex: 1 }}>
-                    <Group justify="space-between" align="start" mb="xs">
-                      <Title order={4} lineClamp={2} style={{ flex: 1 }}>
-                        {event.title}
-                      </Title>
-                      {event.featured && (
-                        <Badge color="orange" variant="light">Featured</Badge>
-                      )}
-                    </Group>
+        <>
+          {search && (
+            <Text size="sm" c="dimmed" mb="md">
+              {filteredEvents.length} result{filteredEvents.length !== 1 ? 's' : ''} for "{search}"
+            </Text>
+          )}
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+            {filteredEvents.map((event) => {
+              const isRsvped = rsvpedEvents.has(event.id);
+              return (
+                <Card key={event.id} shadow="sm" padding="lg" radius="md" withBorder>
+                  <Stack gap="sm" h="100%">
+                    <Box style={{ flex: 1 }}>
+                      <Group justify="space-between" align="start" mb="xs">
+                        <Title order={4} lineClamp={2} style={{ flex: 1 }}>
+                          {event.title}
+                        </Title>
+                        {event.featured && (
+                          <Badge color="orange" variant="light">Featured</Badge>
+                        )}
+                      </Group>
 
-                    <Text size="sm" c="dimmed" lineClamp={3} mb="md">
-                      {event.description}
-                    </Text>
+                      <Text size="sm" c="dimmed" lineClamp={3} mb="md">
+                        {event.description}
+                      </Text>
 
-                    <Divider my="sm" />
+                      <Divider my="sm" />
 
-                    <Stack gap="xs">
-                      {event.start && (
-                        <Group gap="xs">
-                          <IconCalendar size={16} stroke={1.5} />
-                          <Text size="sm">{formatDate(event.start)}</Text>
-                        </Group>
-                      )}
+                      <Stack gap="xs">
+                        {event.start && (
+                          <Group gap="xs">
+                            <IconCalendar size={16} stroke={1.5} />
+                            <Text size="sm">{formatDate(event.start)}</Text>
+                          </Group>
+                        )}
+                        {event.start && (
+                          <Group gap="xs">
+                            <IconClock size={16} stroke={1.5} />
+                            <Text size="sm">
+                              {formatTime(event.start)}
+                              {event.end && ` - ${formatTime(event.end)}`}
+                            </Text>
+                          </Group>
+                        )}
+                        {event.location && (
+                          <Group gap="xs">
+                            <IconMapPin size={16} stroke={1.5} />
+                            <Text size="sm" lineClamp={1}>{event.location}</Text>
+                          </Group>
+                        )}
+                      </Stack>
+                    </Box>
 
-                      {event.start && (
-                        <Group gap="xs">
-                          <IconClock size={16} stroke={1.5} />
-                          <Text size="sm">
-                            {formatTime(event.start)}
-                            {event.end && ` - ${formatTime(event.end)}`}
-                          </Text>
-                        </Group>
-                      )}
-
-                      {event.location && (
-                        <Group gap="xs">
-                          <IconMapPin size={16} stroke={1.5} />
-                          <Text size="sm" lineClamp={1}>{event.location}</Text>
-                        </Group>
-                      )}
-                    </Stack>
-                  </Box>
-
-                  <Button 
-                    variant={isRsvped ? "light" : "filled"}
-                    color={isRsvped ? "green" : "blue"}
-                    fullWidth 
-                    radius="md"
-                    leftSection={isRsvped ? <IconCheck size={16} /> : <IconTicket size={16} />}
-                    onClick={() => handleRsvpClick(event)}
-                    disabled={isRsvped}
-                  >
-                    {isRsvped ? "RSVP'd" : "RSVP"}
-                  </Button>
-                </Stack>
-              </Card>
-            );
-          })}
-        </SimpleGrid>
+                    <Button 
+                      variant={isRsvped ? "light" : "filled"}
+                      color={isRsvped ? "green" : "blue"}
+                      fullWidth 
+                      radius="md"
+                      leftSection={isRsvped ? <IconCheck size={16} /> : <IconTicket size={16} />}
+                      onClick={() => handleRsvpClick(event)}
+                      disabled={isRsvped}
+                    >
+                      {isRsvped ? "RSVP'd" : "RSVP"}
+                    </Button>
+                  </Stack>
+                </Card>
+              );
+            })}
+          </SimpleGrid>
+        </>
       )}
 
       <Modal 
@@ -250,24 +265,16 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
                 This helps us personalize your experience and accommodate your needs.
               </Text>
               <Group mt="md" style={{ width: '100%' }}>
-                <Button variant="subtle" onClick={close} style={{ flex: 1 }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleProfileSetup} style={{ flex: 1 }}>
-                  Complete Profile
-                </Button>
+                <Button variant="subtle" onClick={close} style={{ flex: 1 }}>Cancel</Button>
+                <Button onClick={handleProfileSetup} style={{ flex: 1 }}>Complete Profile</Button>
               </Group>
             </>
           ) : rsvpError ? (
             <>
               <IconAlertCircle size={48} color="red" />
               <Text ta="center" fw={500}>RSVP Failed</Text>
-              <Text size="sm" c="dimmed" ta="center">
-                {rsvpError}
-              </Text>
-              <Button onClick={close} fullWidth mt="md">
-                Close
-              </Button>
+              <Text size="sm" c="dimmed" ta="center">{rsvpError}</Text>
+              <Button onClick={close} fullWidth mt="md">Close</Button>
             </>
           ) : rsvpLoading ? (
             <>

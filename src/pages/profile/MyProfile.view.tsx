@@ -13,7 +13,6 @@ import {
 } from '@tabler/icons-react';
 import { config } from '../../config';
 import { RsvpProfile, SCHOOL_YEARS, MAJORS, COMMON_INTERESTS } from '../../common/types/rsvp';
-import { CheckInModal } from '../../components/ProfileQR';
 
 interface MyProfileViewProps {
   getProfile: () => Promise<RsvpProfile | null>;
@@ -21,7 +20,7 @@ interface MyProfileViewProps {
   isFirstTime: boolean;
 }
 const DIETARY_RESTRICTIONS_OPTIONS = [
-  "Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Nut Allergy", "Shellfish Allergy", "Halal", "Kosher", "Lactose Intolerant", "Pescatarian"
+  "Vegetarian", "Vegan", "No Beef", "Gluten-Free", "Dairy-Free", "Nut Allergy", "Shellfish Allergy", "Halal", "Kosher", "Lactose Intolerant", "Pescatarian"
 ];
 
 export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProfileViewProps) {
@@ -41,7 +40,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
   const [welcomeOpened, { open: openWelcome, close: closeWelcome }] = useDisclosure(isFirstTime);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  const [qrModalOpened, { open: openQrModal, close: closeQrModal }] = useDisclosure(false);
 
   useEffect(() => {
     loadProfile();
@@ -166,8 +164,6 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
 
   return (
     <Container size="md" py="xl">
-      <CheckInModal opened={qrModalOpened} onClose={closeQrModal} />
-
       <Stack gap="lg">
         <Group justify="space-between" align="center">
           <Box>
@@ -176,16 +172,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
           </Box>
           
           {!isEditing && profile && (
-            <Group gap="xs">
-               <Button 
-                variant="light" 
-                color="blue" 
-                leftSection={<IconQrcode size={18} />}
-                onClick={openQrModal}
-              >
-                Show QR Code
-              </Button>
-              
+            <Group gap="xs">              
               <Tooltip label="Edit Profile">
                 <ActionIcon variant="light" color="blue" size="lg" onClick={handleEditClick} w={36} h={36}>
                   <IconEdit size={20} />

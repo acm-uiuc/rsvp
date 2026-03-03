@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Title, Text, Container, Card, Button, Group, Stack,
-  Loader, Alert, Box, Modal, Badge, Divider, ActionIcon
+  Loader, Alert, Box, Modal, Badge, Divider, ActionIcon, TextInput
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
 import {
   IconAlertCircle, IconTicket, IconCalendar, IconClock,
-  IconMapPin, IconTrash, IconInfoCircle, IconRefresh
+  IconMapPin, IconTrash, IconInfoCircle, IconRefresh, IconSearch
 } from '@tabler/icons-react';
 import { config } from '../../config';
 
@@ -35,6 +35,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
   const [rsvps, setRsvps] = useState<EnrichedRsvp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [cancelModalOpened, { open: openCancelModal, close: closeCancelModal }] = useDisclosure(false);
   const [selectedRsvp, setSelectedRsvp] = useState<EnrichedRsvp | null>(null);
@@ -109,12 +110,39 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
     });
   };
 
-  const isPastEvent = (dateString: string) => {
-    return new Date(dateString) < new Date();
+  const isPastEvent = (rsvp: EnrichedRsvp): boolean => {
+    // If there's an end time, the event is only past once it has ended
+    if (rsvp.endTime) return new Date(rsvp.endTime) < new Date();
+    // If no end time, fall back to start time
+    if (rsvp.startTime) return new Date(rsvp.startTime) < new Date();
+    return false;
   };
 
-  const upcomingRsvps = rsvps.filter(r => r.startTime && !isPastEvent(r.startTime));
-  const pastRsvps = rsvps.filter(r => r.startTime && isPastEvent(r.startTime));
+  const isOngoingEvent = (rsvp: EnrichedRsvp): boolean => {
+    if (!rsvp.startTime || !rsvp.endTime) return false;
+    const now = new Date();
+    return new Date(rsvp.startTime) <= now && new Date(rsvp.endTime) >= now;
+  };
+
+  const isUpcomingEvent = (rsvp: EnrichedRsvp): boolean => {
+    if (!rsvp.startTime) return false;
+    return new Date(rsvp.startTime) > new Date();
+  };
+
+  const filteredRsvps = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rsvps;
+    return rsvps.filter(r =>
+      r.title?.toLowerCase().includes(q) ||
+      r.description?.toLowerCase().includes(q) ||
+      r.location?.toLowerCase().includes(q) ||
+      r.eventDate?.toLowerCase().includes(q)
+    );
+  }, [rsvps, search]);
+
+  const ongoingRsvps = filteredRsvps.filter(r => isOngoingEvent(r));
+  const upcomingRsvps = filteredRsvps.filter(r => isUpcomingEvent(r));
+  const pastRsvps = filteredRsvps.filter(r => isPastEvent(r) && !isOngoingEvent(r));
 
   return (
     <Container size="xl" py="xl">
@@ -134,6 +162,14 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             </Button>
           </Group>
         </Group>
+
+        <TextInput
+          placeholder="Search by name, location, or date..."
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          radius="md"
+        />
       </Stack>
 
       {error && (
@@ -153,21 +189,97 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         <Group justify="center" py="xl">
           <Loader size="lg" type="dots" />
         </Group>
-      ) : rsvps.length === 0 ? (
+      ) : rsvps.length === 0 || (search && filteredRsvps.length === 0) ? (
         <Card shadow="sm" padding="xl" radius="md" withBorder>
           <Stack align="center" gap="md" py="xl">
             <IconTicket size={48} stroke={1.5} color="gray" />
-            <Title order={3} c="dimmed">No RSVPs Yet</Title>
+            <Title order={3} c="dimmed">
+              {search ? 'No matching RSVPs' : 'No RSVPs Yet'}
+            </Title>
             <Text c="dimmed" ta="center">
-              You haven't registered for any events yet.
+              {search ? `No RSVPs found for "${search}".` : "You haven't registered for any events yet."}
             </Text>
-            <Button onClick={navigateEvents} mt="md" leftSection={<IconCalendar size={16} />}>
-              Discover Events
-            </Button>
+            {search ? (
+              <Button variant="subtle" onClick={() => setSearch('')}>Clear search</Button>
+            ) : (
+              <Button onClick={navigateEvents} mt="md" leftSection={<IconCalendar size={16} />}>
+                Discover Events
+              </Button>
+            )}
           </Stack>
         </Card>
       ) : (
         <Stack gap="xl">
+
+          {/* Ongoing Events */}
+          {ongoingRsvps.length > 0 && (
+            <Box>
+              <Group mb="md">
+                <IconClock size={20} stroke={1.5} color="var(--mantine-color-teal-6)" />
+                <Title order={3}>Happening Now ({ongoingRsvps.length})</Title>
+              </Group>
+              <Stack gap="md">
+                {ongoingRsvps.map((rsvp) => (
+                  <Card key={rsvp.eventId} shadow="sm" padding="lg" radius="md" withBorder
+                    style={{ borderColor: 'var(--mantine-color-teal-4)' }}
+                  >
+                    <Group justify="space-between" align="start" wrap="nowrap">
+                      <Box style={{ flex: 1 }}>
+                        <Group mb="xs" gap="xs">
+                          <Title order={4}>{rsvp.title}</Title>
+                          <Badge color="teal" variant="filled" size="sm">Live Now</Badge>
+                          {rsvp.featured && (
+                            <Badge color="orange" variant="light" size="sm">Featured</Badge>
+                          )}
+                        </Group>
+
+                        {rsvp.description && (
+                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>
+                            {rsvp.description}
+                          </Text>
+                        )}
+
+                        <Stack gap="xs" mt="sm">
+                          <Group gap="xs">
+                            <IconCalendar size={16} stroke={1.5} />
+                            <Text size="sm">{rsvp.eventDate}</Text>
+                          </Group>
+
+                          {rsvp.startTime && (
+                            <Group gap="xs">
+                              <IconClock size={16} stroke={1.5} />
+                              <Text size="sm">
+                                {formatTime(rsvp.startTime)}
+                                {rsvp.endTime && ` - ${formatTime(rsvp.endTime)}`}
+                              </Text>
+                            </Group>
+                          )}
+
+                          {rsvp.location && (
+                            <Group gap="xs">
+                              <IconMapPin size={16} stroke={1.5} />
+                              <Text size="sm" lineClamp={1}>{rsvp.location}</Text>
+                            </Group>
+                          )}
+
+                          <Divider my="xs" />
+
+                          <Group gap="xs">
+                            <IconInfoCircle size={14} stroke={1.5} />
+                            <Text size="xs" c="dimmed">
+                              Registered on {rsvp.registeredDate}
+                            </Text>
+                          </Group>
+                        </Stack>
+                      </Box>
+                    </Group>
+                  </Card>
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Upcoming Events */}
           {upcomingRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -242,6 +354,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             </Box>
           )}
 
+          {/* Past Events */}
           {pastRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -292,6 +405,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
               </Stack>
             </Box>
           )}
+
         </Stack>
       )}
 
