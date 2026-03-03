@@ -27,7 +27,7 @@ export function LoginPage() {
               'x-uiuc-token': authToken || '',
             }
           });
-          const res = await fetch('https://www.acm.illinois.edu/api/v1/syncIdentity/isRequired', {
+          const res = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity/isRequired', {
             method: 'GET',
             headers: {
               'x-uiuc-token': authToken || '',
@@ -36,7 +36,7 @@ export function LoginPage() {
           const syncRequired = await res.json();
           console.log(syncRequired);
           if (syncRequired?.syncRequired) {
-            const syncRes = await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
+            const syncRes = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity', {
               method: 'POST',
               headers: {
                 'x-uiuc-token': authToken || '',

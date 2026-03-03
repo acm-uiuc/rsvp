@@ -26,31 +26,29 @@ export function HomePage() {
           const authToken = await getToken();
           try {
             const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/profile/me`, {
-              method: 'DELETE',
+              method: 'GET',
               headers: {
                 'x-uiuc-token': authToken || '',
               }
             });
-            const res = await fetch('https://www.acm.illinois.edu/api/v1/syncIdentity/isRequired', {
+
+            console.log(response);
+            const res = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity/isRequired', {
               method: 'GET',
               headers: {
                 'x-uiuc-token': authToken || '',
               }
             });
             const syncRequired = await res.json();
-            console.log(syncRequired);
             if (syncRequired?.syncRequired) {
-              const syncRes = await fetch('https://core.acm.illinois.edu/api/v1/syncIdentity', {
+              await fetch(config.apiBaseUrl + '/api/v1/syncIdentity', {
                 method: 'POST',
                 headers: {
                   'x-uiuc-token': authToken || '',
                 }
               });
-              console.log(syncRes);
             }
             if (response.status === 400 || response.status === 404) {
-              navigate("/profile?firstTime=true", { replace: true });
-            } else {
               navigate("/profile?firstTime=true", { replace: true });
             }
           } catch (error) {
