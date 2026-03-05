@@ -12,7 +12,6 @@ export const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Check if we have pending redirects
         const response = await instance.handleRedirectPromise();
         if (!response) {
           navigate("/");

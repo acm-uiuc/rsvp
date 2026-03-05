@@ -1,16 +1,25 @@
-import { useCallback } from 'react';
-import { MainLayout } from '../../components/Layout'; 
+import { useCallback, useEffect } from 'react';
+import { MainLayout } from '../../components/Layout';
 import { useAuth } from '../../components/AuthContext';
+import { useProfile } from '../../components/ProfileContext';
 import { useNavigate } from 'react-router-dom';
 import { RsvpItem } from '../../common/types/rsvp';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
 import { MyRsvpsView, EnrichedRsvp } from './MyRsvps.view';
 import { apiCache, CacheTTL } from '../../common/utils/apiCache';
+import { ApiRequestError } from '../../common/utils/apiError';
 
 export function MyRsvpsPage() {
   const { getToken, user } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!profileLoading && !profile) {
+      navigate('/profile?firstTime=true', { replace: true });
+    }
+  }, [profileLoading, profile, navigate]);
 
   const getMyRsvps = useCallback(async (): Promise<EnrichedRsvp[]> => {
     if (!user) return [];
@@ -101,16 +110,17 @@ export function MyRsvpsPage() {
 
     if (!response.ok) {
       const txt = await response.text();
-      
+      const requestId = response.headers.get('x-request-id') ?? undefined;
+
       if (response.status === 404) {
-        throw new Error('RSVP not found. It may have already been cancelled.');
+        throw new ApiRequestError('RSVP not found. It may have already been cancelled.', 'Not Found', requestId);
       }
-      
+
       if (response.status === 403) {
-        throw new Error('You do not have permission to cancel this RSVP.');
+        throw new ApiRequestError('You do not have permission to cancel this RSVP.', 'Permission Denied', requestId);
       }
-      
-      throw new Error(txt || 'Failed to cancel RSVP');
+
+      throw new ApiRequestError(txt || 'Failed to cancel RSVP', 'Cancellation Failed', requestId);
     }
 
     apiCache.invalidate('rsvps:my');

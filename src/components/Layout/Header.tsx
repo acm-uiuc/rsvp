@@ -22,6 +22,10 @@ export function Header({ opened, toggle }: HeaderProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const formattedName = user?.name 
+  ? user.name.split(',').map(part => part.trim()).reverse().join(' ') 
+  : '';
+
   return (
     <Group h="100%" px="md" justify="space-between">
       <Group>
@@ -33,9 +37,9 @@ export function Header({ opened, toggle }: HeaderProps) {
         <Menu.Target>
           <Button variant="subtle" rightSection={<IconChevronDown size={14} />}>
             <Group gap={7}>
-              <Avatar src={null} alt={user?.name} radius="xl" size={20} color="blue" />
+              <Avatar src={null} alt={formattedName} radius="xl" size={20} color="blue" />
               <Text fw={500} size="sm" lh={1} mr={3}>
-                {user?.name || "User"}
+                {formattedName || "User"}
               </Text>
             </Group>
           </Button>

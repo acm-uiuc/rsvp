@@ -5,7 +5,7 @@ export interface RsvpItem {
 }
 
 export interface RsvpProfile {
-  schoolYear: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate";
+  schoolYear: string;
   intendedMajor: string;
   interests: string[];
   dietaryRestrictions: string[];

@@ -3,63 +3,35 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Center, Alert, Stack } from "@mantine/core";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import LogoBadge from "../components/Logo";
-import { config } from "../config";
-import { useAuth } from "../components/AuthContext"; 
+import { useAuth } from "../components/AuthContext";
+import { useProfile } from "../components/ProfileContext";
 import { LoginComponent } from "../components/LoginComponent";
+import FullScreenLoader from "../components/AuthContext/LoadingScreen";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { isLoggedIn, user, getToken } = useAuth();
+  const { profile, loading: profileLoading, error: profileError } = useProfile();
+
+  const { isLoggedIn } = useAuth();
   const [searchParams] = useSearchParams();
-  
+
   const showLogoutMessage = searchParams.get("lc") === "true";
   const showLoginMessage = !showLogoutMessage && searchParams.get("li") === "true";
   const returnTo = searchParams.get("returnTo");
 
   useEffect(() => {
-    const checkProfile = async () => {
-      if (isLoggedIn && user) {
-        const authToken = await getToken();
-        try {
-          const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/profile/me`, {
-            method: 'DELETE',
-            headers: {
-              'x-uiuc-token': authToken || '',
-            }
-          });
-          const res = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity/isRequired', {
-            method: 'GET',
-            headers: {
-              'x-uiuc-token': authToken || '',
-            }
-          });
-          const syncRequired = await res.json();
-          console.log(syncRequired);
-          if (syncRequired?.syncRequired) {
-            const syncRes = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity', {
-              method: 'POST',
-              headers: {
-                'x-uiuc-token': authToken || '',
-              }
-            });
-            console.log(syncRes);
-          }
-          if (response.status === 400 || response.status === 404) {
-            navigate("/profile?firstTime=true", { replace: true });
-          } else if (response.ok) {
-            navigate(returnTo || "/home", { replace: true });
-          } else {
-            navigate("/profile?firstTime=true", { replace: true });
-          }
-        } catch (error) {
-          console.error("Error checking profile:", error);
-          navigate("/profile?firstTime=true");
-        }
+    if (isLoggedIn && !profileLoading) {
+      if (profileError || !profile) {
+        navigate("/profile?firstTime=true", { replace: true });
+      } else {
+        navigate(returnTo || "/home", { replace: true });
       }
-    };
-    
-    checkProfile();
-  }, [isLoggedIn, user, navigate, getToken]);
+    }
+  }, [isLoggedIn, profileLoading, profile, profileError, navigate, returnTo]);
+
+  if (isLoggedIn && profileLoading) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <div style={{ display: "flex", flexFlow: "column", height: "100vh" }}>
@@ -70,7 +42,7 @@ export function LoginPage() {
             You have successfully logged out.
           </Alert>
         )}
-        
+
         {showLoginMessage && (
           <Alert icon={<IconAlertTriangle />} title="Auth Required" color="orange">
             You must log in to view this page.

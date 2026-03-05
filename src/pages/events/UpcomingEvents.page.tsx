@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
-import { MainLayout } from '../../components/Layout'; 
+import { MainLayout } from '../../components/Layout';
 import { Event } from '../../common/types/event';
-import { config } from '../../config'; 
+import { config } from '../../config';
 import { useAuth } from '../../components/AuthContext';
 import { UpcomingEventsView } from './UpcomingEvents.view';
 import { apiCache, CacheTTL } from '../../common/utils/apiCache';
+import { ApiRequestError } from '../../common/utils/apiError';
 
 export function UpcomingEventsPage() {
   const { getToken } = useAuth();
@@ -13,13 +14,22 @@ export function UpcomingEventsPage() {
     return apiCache.getOrFetch(
       'events:upcoming',
       async () => {
-        const response = await fetch(config.apiBaseUrl + '/api/v1/events?upcomingOnly=true', {
+        const response = await fetch(config.apiBaseUrl + '/api/v1/events?rsvpOnly=true', {
           cache: 'no-store'
         });
-        if (!response.ok) throw new Error('Failed to fetch events');
-        return await response.json();
+        if (!response.ok) {
+          throw new ApiRequestError(
+            'Failed to fetch events',
+            'Failed to Load Events',
+            response.headers.get('x-request-id') ?? undefined,
+          );
+        }
+        const events: Event[] = await response.json();
+        return events.sort((a, b) => 
+          new Date(a.start).getTime() - new Date(b.start).getTime()
+        );
       },
-      CacheTTL.SHORT 
+      CacheTTL.SHORT
     );
   }, []);
 
@@ -43,30 +53,32 @@ export function UpcomingEventsPage() {
 
     if (!response.ok) {
       const errData = await response.text();
-      
+      const requestId = response.headers.get('x-request-id') ?? undefined;
+
       if (response.status === 400) {
-        if (errData.toLowerCase().includes('profile') || 
-            errData.toLowerCase().includes('complete') ||
-            errData.toLowerCase().includes('required')) {
-          throw new Error('400: Profile required');
+        if (
+          errData.toLowerCase().includes('profile') ||
+          errData.toLowerCase().includes('complete') ||
+          errData.toLowerCase().includes('required')
+        ) {
+          throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required', requestId, true);
         }
-        throw new Error(`400: ${errData}`);
+        throw new ApiRequestError(errData || 'Bad request', 'Bad Request', requestId);
       }
-      
+
       if (response.status === 409) {
-        throw new Error('You have already RSVP\'d to this event');
+        throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered', requestId);
       }
-      
+
       if (response.status === 403) {
-        throw new Error('Event is at full capacity');
+        throw new ApiRequestError('This event is at full capacity.', 'Event Full', requestId);
       }
-      
-      throw new Error(errData || 'Failed to RSVP');
+
+      throw new ApiRequestError(errData || 'Failed to RSVP', 'Request Failed', requestId);
     }
 
-    // Invalidate related caches after successful RSVP
     apiCache.invalidate('rsvps:my');
-    apiCache.invalidate('events:upcoming'); // In case RSVP affects event capacity
+    apiCache.invalidate('events:upcoming');
   }, [getToken]);
 
   return (

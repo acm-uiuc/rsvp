@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Title, Text, Container, SimpleGrid, Card, Badge, Button, Group, Stack, 
-  Loader, Alert, Box, Modal, Divider, TextInput
+  Loader, Box, Modal, Divider, TextInput
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
@@ -12,6 +12,8 @@ import {
 } from '@tabler/icons-react';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
+import { ApiErrorAlert } from '../../components/ApiErrorAlert';
+import { ApiError, ApiRequestError, toApiError } from '../../common/utils/apiError';
 
 interface UpcomingEventsViewProps {
   getEvents: () => Promise<Event[]>;
@@ -23,14 +25,14 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
   const [rsvpedEvents, setRsvpedEvents] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
 
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
-  const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [rsvpError, setRsvpError] = useState<ApiError | 'profile' | null>(null);
 
   useEffect(() => {
     loadEvents();
@@ -41,9 +43,9 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
       const data = await getEvents();
       setEvents(data);
       setError(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Could not load events. Please try again later.");
+      setError(toApiError(err));
     } finally {
       setLoading(false);
     }
@@ -86,16 +88,12 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
       await onRsvp(selectedEvent, token);
       setRsvpedEvents(prev => new Set(prev).add(selectedEvent.id));
       close();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      if (e.message?.includes('400') || e.message?.toLowerCase().includes('profile')) {
+      if (e instanceof ApiRequestError && e.isProfileRequired) {
         setRsvpError('profile');
-      } else if (e.message?.toLowerCase().includes('full') || e.message?.toLowerCase().includes('capacity')) {
-        setRsvpError('Event is at full capacity');
-      } else if (e.message?.toLowerCase().includes('already')) {
-        setRsvpError('You have already RSVP\'d to this event');
       } else {
-        setRsvpError(e.message || 'Failed to RSVP. Please try again.');
+        setRsvpError(toApiError(e));
       }
     } finally {
       setRsvpLoading(false);
@@ -141,18 +139,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
         />
       </Stack>
 
-      {error && (
-        <Alert 
-          icon={<IconAlertCircle />} 
-          title="Error" 
-          color="red" 
-          mb="xl"
-          withCloseButton
-          onClose={() => setError(null)}
-        >
-          {error}
-        </Alert>
-      )}
+      <ApiErrorAlert error={error} onClose={() => setError(null)} />
 
       {loading ? (
         <Group justify="center" py="xl">
@@ -271,9 +258,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
             </>
           ) : rsvpError ? (
             <>
-              <IconAlertCircle size={48} color="red" />
-              <Text ta="center" fw={500}>RSVP Failed</Text>
-              <Text size="sm" c="dimmed" ta="center">{rsvpError}</Text>
+              <ApiErrorAlert error={rsvpError} />
               <Button onClick={close} fullWidth mt="md">Close</Button>
             </>
           ) : rsvpLoading ? (

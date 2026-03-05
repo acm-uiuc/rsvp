@@ -17,7 +17,9 @@ import {
 } from '@mantine/core';
 import { IconCalendarEvent, IconTicket, IconSettings, IconCalendar, IconClock, IconMapPin } from '@tabler/icons-react';
 import { useAuth } from '../components/AuthContext';
+import { useProfile } from '../components/ProfileContext';
 import { MainLayout } from '../components/Layout/index';
+import FullScreenLoader from '../components/AuthContext/LoadingScreen';
 import { useNavigate } from 'react-router-dom';
 import { config } from '../config';
 import { RsvpItem } from '../common/types/rsvp';
@@ -27,42 +29,17 @@ import { apiCache, CacheTTL } from '../common/utils/apiCache';
 
 export function HomePage() {
   const { user, isLoggedIn, getToken } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
   const [rsvps, setRsvps] = useState<EnrichedRsvp[]>([]);
   const [rsvpsLoading, setRsvpsLoading] = useState(false);
 
   useEffect(() => {
-    const checkProfile = async () => {
-      if (isLoggedIn && user) {
-        const authToken = await getToken();
-        try {
-          const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/profile/me`, {
-            method: 'GET',
-            headers: { 'x-uiuc-token': authToken || '' }
-          });
-          const res = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity/isRequired', {
-            method: 'GET',
-            headers: { 'x-uiuc-token': authToken || '' }
-          });
-          const syncRequired = await res.json();
-          if (syncRequired?.syncRequired) {
-            await fetch(config.apiBaseUrl + '/api/v1/syncIdentity', {
-              method: 'POST',
-              headers: { 'x-uiuc-token': authToken || '' }
-            });
-          }
-          if (response.status === 400 || response.status === 404) {
-            navigate("/profile?firstTime=true", { replace: true });
-          }
-        } catch (error) {
-          console.error("Error checking profile:", error);
-          navigate("/profile?firstTime=true");
-        }
-      }
-    };
-    checkProfile();
-  }, [isLoggedIn, user, navigate, getToken]);
+    if (isLoggedIn && !profileLoading && !profile) {
+      navigate("/profile?firstTime=true", { replace: true });
+    }
+  }, [isLoggedIn, profileLoading, profile, navigate]);
 
   useEffect(() => {
     const loadRsvps = async () => {
@@ -154,6 +131,8 @@ export function HomePage() {
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
+
+  if (profileLoading && isLoggedIn) return <FullScreenLoader />;
 
   return (
     <MainLayout>

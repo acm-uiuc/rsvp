@@ -3,68 +3,79 @@ import { useNavigate } from 'react-router-dom';
 import {
   Title, Text, Container, Card, Button, Group, Stack,
   Loader, Alert, Modal, TextInput, Select, MultiSelect,
-  Badge, ActionIcon, Box, Progress, Tooltip, Center
+  Badge, ActionIcon, Box, Progress, Tooltip, SimpleGrid
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { 
-  IconAlertCircle, IconEdit, IconCheck, IconX, IconUser, 
-  IconSchool, IconStar, IconApple, IconQrcode 
+import {
+  IconEdit, IconCheck, IconX, IconUser,
+  IconSchool, IconStar, IconApple, IconAlertCircle
 } from '@tabler/icons-react';
 import { config } from '../../config';
-import { RsvpProfile, SCHOOL_YEARS, MAJORS, COMMON_INTERESTS } from '../../common/types/rsvp';
+import { RsvpProfile, MAJORS, COMMON_INTERESTS } from '../../common/types/rsvp';
+import { ApiErrorAlert } from '../../components/ApiErrorAlert';
+import type { ApiError } from '../../common/utils/apiError';
 
 interface MyProfileViewProps {
-  getProfile: () => Promise<RsvpProfile | null>;
+  profile: RsvpProfile | null;
+  loading: boolean;
+  error: ApiError | null;
   updateProfile: (profile: Omit<RsvpProfile, 'updatedAt'>, turnstileToken: string) => Promise<void>;
   isFirstTime: boolean;
 }
+
 const DIETARY_RESTRICTIONS_OPTIONS = [
   "Vegetarian", "Vegan", "No Beef", "Gluten-Free", "Dairy-Free", "Nut Allergy", "Shellfish Allergy", "Halal", "Kosher", "Lactose Intolerant", "Pescatarian"
 ];
 
-export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProfileViewProps) {
+const GRAD_MONTHS = ["May", "August", "December"];
+const DEGREES = ["Bachelors", "Masters", "PhD", "Other"];
+
+const currentYear = new Date().getFullYear();
+const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => (currentYear + i).toString());
+
+export function MyProfileView({ profile, loading, error, updateProfile, isFirstTime }: MyProfileViewProps) {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<RsvpProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(isFirstTime);
 
-  const [schoolYear, setSchoolYear] = useState<string>('');
+  const [gradMonth, setGradMonth] = useState<string>('');
+  const [gradYear, setGradYear] = useState<string>('');
+  const [degree, setDegree] = useState<string>('');
+  
   const [intendedMajor, setIntendedMajor] = useState<string>('');
   const [interests, setInterests] = useState<string[]>([]);
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
 
+  const [errorDismissed, setErrorDismissed] = useState(false);
   const [opened, { open, close }] = useDisclosure(false);
-  const [welcomeOpened, { open: openWelcome, close: closeWelcome }] = useDisclosure(isFirstTime);
+  const [welcomeOpened, { close: closeWelcome }] = useDisclosure(isFirstTime);
   const [saveLoading, setSaveLoading] = useState(false);
 
-
-  useEffect(() => {
-    loadProfile();
-  }, [getProfile]);
-
-  const loadProfile = async () => {
-    try {
-      const data = await getProfile();
-      if (data) {
-        setProfile(data);
-        setSchoolYear(data.schoolYear);
-        setIntendedMajor(data.intendedMajor);
-        setInterests(data.interests);
-        setDietaryRestrictions(data.dietaryRestrictions);
-        setError(null);
-      } else if (!isFirstTime) {
-        setError("Profile not found.");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Could not load profile.");
-    } finally {
-      setLoading(false);
+  const parseSchoolYear = (savedString: string) => {
+    if (!savedString) return;
+    
+    const parts = savedString.split(' - ');
+    if (parts.length === 2) {
+      const [month, year] = parts[0].split(' ');
+      setGradMonth(month || '');
+      setGradYear(year || '');
+      setDegree(parts[1] || '');
     }
   };
+
+  useEffect(() => {
+    if (error) setErrorDismissed(false);
+  }, [error]);
+
+  useEffect(() => {
+    if (profile) {
+      parseSchoolYear(profile.schoolYear);
+      setIntendedMajor(profile.intendedMajor);
+      setInterests(profile.interests);
+      setDietaryRestrictions(profile.dietaryRestrictions);
+    }
+  }, [profile]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -72,7 +83,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
 
   const handleCancelEdit = () => {
     if (profile) {
-      setSchoolYear(profile.schoolYear);
+      parseSchoolYear(profile.schoolYear); // Unpack the string again on cancel
       setIntendedMajor(profile.intendedMajor);
       setInterests(profile.interests);
       setDietaryRestrictions(profile.dietaryRestrictions);
@@ -81,8 +92,8 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
   };
 
   const handleSaveClick = () => {
-    if (!schoolYear) {
-      alert('Please select your school year');
+    if (!gradMonth || !gradYear || !degree) {
+      alert('Please fill out your graduation month, year, and degree.');
       return;
     }
     if (!intendedMajor) {
@@ -101,22 +112,20 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
 
   const handleTurnstileSuccess = async (token: string) => {
     setSaveLoading(true);
+    
+    const bundledSchoolYear = `${gradMonth}, ${gradYear}, ${degree}`;
+    
     try {
       await updateProfile(
         {
-          schoolYear: schoolYear as RsvpProfile['schoolYear'],
+          schoolYear: bundledSchoolYear as RsvpProfile['schoolYear'],
           intendedMajor,
           interests,
           dietaryRestrictions,
         },
         token
       );
-      
-      const updatedProfile = await getProfile();
-      if (updatedProfile) {
-        setProfile(updatedProfile);
-      }
-      
+
       setIsEditing(false);
       close();
       
@@ -192,10 +201,8 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
           </Card>
         )}
 
-        {error && (
-          <Alert icon={<IconAlertCircle />} title="Error" color="red" withCloseButton onClose={() => setError(null)}>
-            {error}
-          </Alert>
+        {!errorDismissed && (
+          <ApiErrorAlert error={error} onClose={() => setErrorDismissed(true)} />
         )}
 
         {loading ? (
@@ -207,15 +214,35 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
             <Stack gap="md">
               {isEditing ? (
                 <>
-                  <Select
-                    label={<Group gap="xs"><IconSchool size={16} /><Text size="sm" fw={500}>School Year</Text></Group>}
-                    placeholder="Select your year"
-                    data={SCHOOL_YEARS}
-                    value={schoolYear}
-                    onChange={(value) => setSchoolYear(value || '')}
-                    required
-                    withAsterisk
-                  />
+                  <Box>
+                    <Group gap="xs" mb="xs">
+                      <IconSchool size={16} />
+                      <Text size="sm" fw={500}>Graduation Details <Text span c="red">*</Text></Text>
+                    </Group>
+                    <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                      <Select
+                        placeholder="Month"
+                        data={GRAD_MONTHS}
+                        value={gradMonth}
+                        onChange={(value) => setGradMonth(value || '')}
+                        required
+                      />
+                      <Select
+                        placeholder="Year"
+                        data={GRAD_YEARS}
+                        value={gradYear}
+                        onChange={(value) => setGradYear(value || '')}
+                        required
+                      />
+                      <Select
+                        placeholder="Degree"
+                        data={DEGREES}
+                        value={degree}
+                        onChange={(value) => setDegree(value || '')}
+                        required
+                      />
+                    </SimpleGrid>
+                  </Box>
 
                   <Select
                     label={<Group gap="xs"><IconUser size={16} /><Text size="sm" fw={500}>Major</Text></Group>}
@@ -243,7 +270,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
                       placeholder="Add custom interest"
                       value={customInterest}
                       onChange={(e) => setCustomInterest(e.target.value)}
-                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInterest(); }}}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInterest(); }}}
                       style={{ flex: 1 }}
                     />
                     <Button onClick={handleAddCustomInterest} variant="light">Add</Button>
@@ -265,7 +292,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
                         Cancel
                       </Button>
                     )}
-                    <Button leftSection={<IconCheck size={16} />} onClick={handleSaveClick} disabled={!schoolYear || !intendedMajor}>
+                    <Button leftSection={<IconCheck size={16} />} onClick={handleSaveClick} disabled={!gradMonth || !gradYear || !degree || !intendedMajor}>
                       {isFirstTime ? 'Complete Setup' : 'Save Changes'}
                     </Button>
                   </Group>
@@ -275,7 +302,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
                   <Box>
                     <Group gap="xs" mb={4}>
                       <IconSchool size={16} stroke={1.5} />
-                      <Text size="sm" c="dimmed">School Year</Text>
+                      <Text size="sm" c="dimmed">Graduation</Text>
                     </Group>
                     <Badge size="lg" variant="light">{profile?.schoolYear}</Badge>
                   </Box>
@@ -322,7 +349,7 @@ export function MyProfileView({ getProfile, updateProfile, isFirstTime }: MyProf
 
                   {profile?.updatedAt && (
                     <Text size="xs" c="dimmed" mt="md">
-                      Last updated: {new Date(profile.updatedAt * 1000).toLocaleDateString('en-US', {
+                      Last updated: {new Date(profile.updatedAt).toLocaleDateString('en-US', {
                         month: 'long', day: 'numeric', year: 'numeric'
                       })}
                     </Text>

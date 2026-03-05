@@ -6,10 +6,12 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
 import {
-  IconAlertCircle, IconTicket, IconCalendar, IconClock,
+  IconTicket, IconCalendar, IconClock,
   IconMapPin, IconTrash, IconInfoCircle, IconRefresh, IconSearch
 } from '@tabler/icons-react';
 import { config } from '../../config';
+import { ApiErrorAlert } from '../../components/ApiErrorAlert';
+import { ApiError, toApiError } from '../../common/utils/apiError';
 
 export interface EnrichedRsvp {
   eventId: string;
@@ -34,13 +36,13 @@ interface MyRsvpsViewProps {
 export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh }: MyRsvpsViewProps) {
   const [rsvps, setRsvps] = useState<EnrichedRsvp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
   const [search, setSearch] = useState('');
 
   const [cancelModalOpened, { open: openCancelModal, close: closeCancelModal }] = useDisclosure(false);
   const [selectedRsvp, setSelectedRsvp] = useState<EnrichedRsvp | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<ApiError | null>(null);
 
   useEffect(() => {
     loadRsvps();
@@ -51,9 +53,9 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
       const data = await getRsvps();
       setRsvps(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Could not load your RSVPs. Please try again later.");
+      setError(toApiError(err));
     } finally {
       setLoading(false);
     }
@@ -93,9 +95,9 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         alert(`Successfully cancelled RSVP for ${selectedRsvp.title}`);
       }, 100);
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setCancelError(e.message || 'Failed to cancel RSVP. Please try again.');
+      setCancelError(toApiError(e));
     } finally {
       setCancelLoading(false);
     }
@@ -172,18 +174,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         />
       </Stack>
 
-      {error && (
-        <Alert
-          icon={<IconAlertCircle />}
-          title="Error"
-          color="red"
-          mb="xl"
-          withCloseButton
-          onClose={() => setError(null)}
-        >
-          {error}
-        </Alert>
-      )}
+      <ApiErrorAlert error={error} onClose={() => setError(null)} />
 
       {loading ? (
         <Group justify="center" py="xl">
@@ -419,11 +410,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         <Stack py="md">
           {cancelError ? (
             <>
-              <IconAlertCircle size={48} color="red" style={{ alignSelf: 'center' }} />
-              <Text ta="center" fw={500}>Cancellation Failed</Text>
-              <Text size="sm" c="dimmed" ta="center">
-                {cancelError}
-              </Text>
+              <ApiErrorAlert error={cancelError} />
               <Button onClick={closeCancelModal} fullWidth mt="md">
                 Close
               </Button>

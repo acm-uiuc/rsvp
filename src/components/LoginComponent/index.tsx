@@ -3,32 +3,43 @@ import {
   Paper,
   Group,
   PaperProps,
+  Divider,
+  Center,
   Alert,
+  Anchor,
   Title,
-  ThemeIcon,
-  Stack,
-  Center
 } from "@mantine/core";
-import { IconLock, IconCommand } from "@tabler/icons-react";
-import LogoBadge from "../Logo";
+import { IconLock } from "@tabler/icons-react";
+import { useSearchParams } from "react-router-dom";
 
-import { AcmLoginButton } from "./AcmLoginButton";
+import { AcmLoginButton } from "./AcmLoginButton.js";
+
+import brandImgUrl from "../../assets/banner-blue.png";
 
 export function LoginComponent(props: PaperProps) {
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || undefined;
 
   return (
     <Paper radius="md" p="xl" withBorder {...props}>
-        <Stack align="center" gap="md" className="mb-6">
-          <LogoBadge size="1.7em" showText={false} />
-          <Text size="lg" fw={500} className="text-center text-gray-700">
-            Welcome to ACM RSVP Portal 
-          </Text>
-        </Stack>
+      <Center>
+        <img
+          src={brandImgUrl}
+          alt="ACM Logo"
+          style={{ height: "5em", marginBottom: "1em" }}
+        />
+      </Center>
+
+      <Center>
+        <Text size="lg" fw={500}>
+          Welcome to the ACM@UIUC Management Portal
+        </Text>
+      </Center>
+
       <Alert
         title={<Title order={5}>Authorized Users Only</Title>}
         icon={<IconLock />}
-        color="blue" 
-        className="mb-6"
+        color="#0053B3"
       >
         <Text size="sm">
           Unauthorized or improper use or access of this system may result in
@@ -36,8 +47,8 @@ export function LoginComponent(props: PaperProps) {
         </Text>
       </Alert>
 
-      <Group grow>
-        <AcmLoginButton radius="xl">
+      <Group grow mb="md" mt="md">
+        <AcmLoginButton radius="xl" returnTo={returnTo || "/"}>
           Sign in with Illinois NetID
         </AcmLoginButton>
       </Group>

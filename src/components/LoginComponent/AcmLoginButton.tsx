@@ -18,7 +18,7 @@ function clearAllDomainCookies() {
 
 export function AcmLoginButton(
   props: ButtonProps &
-    React.ComponentPropsWithoutRef<"button">,
+    React.ComponentPropsWithoutRef<"button"> & { returnTo: string },
 ) {
   const { login } = useAuth();
   const { inProgress } = useMsal();
@@ -46,7 +46,7 @@ export function AcmLoginButton(
       leftSection={null}
       color="#FF5F05"
       variant="filled"
-      {...props}
+      {...{ ...props, returnTo: undefined }}
       onClick={handleLogin}
     />
   );

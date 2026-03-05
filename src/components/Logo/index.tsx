@@ -1,6 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
+
 import brandImgUrl from "../../assets/banner-blue.png";
+import brandWhiteImgUrl from "../../assets/banner-white.png";
+import { useColorScheme, useLocalStorage } from "@mantine/hooks";
 
 interface LogoBadgeProps {
   size?: string;
@@ -14,6 +17,9 @@ export const LogoBadge: React.FC<LogoBadgeProps> = ({
   showText,
 }) => {
   const isNonProd = import.meta.env.VITE_RUN_ENVIRONMENT !== "prod";
+  if (!showText) {
+    showText = true;
+  }
   if (!size) {
     size = "1em";
   }
@@ -35,12 +41,12 @@ export const LogoBadge: React.FC<LogoBadgeProps> = ({
         <img
           src={brandImgUrl}
           alt="ACM Logo"
-          style={{ height: "3em", marginRight: "0.5em" }}
+          style={{ height: "3em", marginLeft: "1em", marginRight: "0.3em", marginTop: "0.3em", paddingRight: "0.5em" }}
         />
         {showText
           ? isNonProd && runEnv
-            ? `RSVP Portal ${runEnv.toUpperCase().replace("LOCAL-DEV", "DEV")} ENV`
-            : "RSVP Portal"
+            ? `Management Portal ${runEnv.toUpperCase().replace("LOCAL-DEV", "DEV")} ENV`
+            : "Management Portal"
           : null}
       </Link>
     </b>
