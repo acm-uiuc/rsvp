@@ -117,11 +117,11 @@ export function MyRsvpsPage() {
 
 
       if (response.status === 404) {
-        throw new ApiRequestError('RSVP not found. It may have already been cancelled.', 'Not Found', requestId);
+        throw new ApiRequestError('RSVP not found. It may have already been cancelled.', 'Not Found');
       }
 
       if (response.status === 403) {
-        throw new ApiRequestError('You do not have permission to cancel this RSVP.', 'Permission Denied', requestId);
+        throw new ApiRequestError('You do not have permission to cancel this RSVP.', 'Permission Denied');
       }
 
       throw new ApiRequestError(txt || 'Failed to cancel RSVP', 'Cancellation Failed', requestId);

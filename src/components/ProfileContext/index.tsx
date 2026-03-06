@@ -71,8 +71,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           const requestId = response.headers.get('x-request-id') ?? undefined;
 
           if (response.status === 400) {
-            const errData = await response.text();
-            throw new ApiRequestError(`Profile validation error: ${errData}`, 'Validation Error', requestId);
+            throw new ApiRequestError(`Profile Has Not Been Provisioned Yet`, 'Must Create Profile');
           }
 
           if (!response.ok) {

@@ -61,17 +61,17 @@ export function UpcomingEventsPage() {
           errData.toLowerCase().includes('complete') ||
           errData.toLowerCase().includes('required')
         ) {
-          throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required', requestId, true);
+          throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required');
         }
         throw new ApiRequestError(errData || 'Bad request', 'Bad Request', requestId);
       }
 
       if (response.status === 409) {
-        throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered', requestId);
+        throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered');
       }
 
       if (response.status === 403) {
-        throw new ApiRequestError('This event is at full capacity.', 'Event Full', requestId);
+        throw new ApiRequestError('This event is at full capacity.', 'Event Full');
       }
 
       throw new ApiRequestError(errData || 'Failed to RSVP', 'Request Failed', requestId);

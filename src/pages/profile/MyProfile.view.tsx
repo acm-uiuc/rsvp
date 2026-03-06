@@ -52,18 +52,6 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
   const [welcomeOpened, { close: closeWelcome }] = useDisclosure(isFirstTime);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  const parseSchoolYear = (savedString: string) => {
-    if (!savedString) return;
-    
-    const parts = savedString.split(' - ');
-    if (parts.length === 2) {
-      const [month, year] = parts[0].split(' ');
-      setGradMonth(month || '');
-      setGradYear(year || '');
-      setDegree(parts[1] || '');
-    }
-  };
-
   useEffect(() => {
     if (error) setErrorDismissed(false);
   }, [error]);
