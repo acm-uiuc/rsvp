@@ -5,6 +5,13 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@acm-uiuc/js-shared@npm:^3.8.1":
+  version: 3.8.1
+  resolution: "@acm-uiuc/js-shared@npm:3.8.1"
+  checksum: 10c0/b05d0e0b8855edbdbc6cc6dfd4bea31bbfa7c6f9e88327ee3469164a0da121110b6f90eeb09b2ec3de9b4a0ba51d389722efed4993129cd87c19d1e437f98da8
+  languageName: node
+  linkType: hard
+
 "@azure/msal-browser@npm:^4.28.0":
   version: 4.29.0
   resolution: "@azure/msal-browser@npm:4.29.0"
@@ -3087,6 +3094,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "rsvp@workspace:."
   dependencies:
+    "@acm-uiuc/js-shared": "npm:^3.8.1"
     "@azure/msal-browser": "npm:^4.28.0"
     "@azure/msal-react": "npm:^3.0.24"
     "@eslint/js": "npm:^9.39.1"

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Title, Text, Container, Card, Button, Group, Stack,
   Loader, Alert, Modal, TextInput, Select, MultiSelect,
-  Badge, ActionIcon, Box, Progress, Tooltip, SimpleGrid
+  Badge, ActionIcon, Box, Progress, Tooltip, SimpleGrid,
+  Notification
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
@@ -12,7 +13,8 @@ import {
   IconSchool, IconStar, IconApple, IconAlertCircle
 } from '@tabler/icons-react';
 import { config } from '../../config';
-import { RsvpProfile, MAJORS, COMMON_INTERESTS } from '../../common/types/rsvp';
+import { RsvpProfile, COMMON_INTERESTS } from '../../common/types/rsvp';
+import { ALL_MAJORS } from '@acm-uiuc/js-shared';
 import { ApiErrorAlert } from '../../components/ApiErrorAlert';
 import type { ApiError } from '../../common/utils/apiError';
 
@@ -236,7 +238,7 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
                   <Select
                     label={<Group gap="xs"><IconUser size={16} /><Text size="sm" fw={500}>Major</Text></Group>}
                     placeholder="Select your major"
-                    data={MAJORS}
+                    data={ALL_MAJORS}
                     value={intendedMajor}
                     onChange={(value) => setIntendedMajor(value || '')}
                     required
