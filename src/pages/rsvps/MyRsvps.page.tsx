@@ -43,10 +43,13 @@ export function MyRsvpsPage() {
         ]);
 
         if (!rsvpRes.ok) {
+          const requestId = rsvpRes.headers.get('x-request-id');
+          console.log("Failed Request ID:", requestId);
+          console.log(Object.fromEntries(rsvpRes.headers.entries()));
           if (rsvpRes.status === 400) {
             return []; 
           }
-          throw new Error('Failed to fetch RSVPs');
+          throw new ApiRequestError('Failed to fetch RSVPs', 'Fetch Failed', requestId || undefined);
         }
         
         const rsvpData: RsvpItem[] = await rsvpRes.json();
@@ -111,6 +114,7 @@ export function MyRsvpsPage() {
     if (!response.ok) {
       const txt = await response.text();
       const requestId = response.headers.get('x-request-id') ?? undefined;
+
 
       if (response.status === 404) {
         throw new ApiRequestError('RSVP not found. It may have already been cancelled.', 'Not Found', requestId);

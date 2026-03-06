@@ -5,7 +5,9 @@ export interface RsvpItem {
 }
 
 export interface RsvpProfile {
-  schoolYear: string;
+  gradYear: number;
+  gradMonth: string;
+  expectedDegree: string;
   intendedMajor: string;
   interests: string[];
   dietaryRestrictions: string[];

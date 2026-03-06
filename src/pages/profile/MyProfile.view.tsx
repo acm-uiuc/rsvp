@@ -29,7 +29,7 @@ const DIETARY_RESTRICTIONS_OPTIONS = [
 ];
 
 const GRAD_MONTHS = ["May", "August", "December"];
-const DEGREES = ["Bachelors", "Masters", "PhD", "Other"];
+const DEGREES = ["Bachelor's", "Master's", "PhD", "Other"];
 
 const currentYear = new Date().getFullYear();
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => (currentYear + i).toString());
@@ -70,7 +70,9 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
 
   useEffect(() => {
     if (profile) {
-      parseSchoolYear(profile.schoolYear);
+      setGradMonth(profile.gradMonth);
+      setGradYear(profile.gradYear.toString());
+      setDegree(profile.expectedDegree);
       setIntendedMajor(profile.intendedMajor);
       setInterests(profile.interests);
       setDietaryRestrictions(profile.dietaryRestrictions);
@@ -83,7 +85,9 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
 
   const handleCancelEdit = () => {
     if (profile) {
-      parseSchoolYear(profile.schoolYear); // Unpack the string again on cancel
+      setGradMonth(profile.gradMonth);
+      setGradYear(profile.gradYear.toString());
+      setDegree(profile.expectedDegree);
       setIntendedMajor(profile.intendedMajor);
       setInterests(profile.interests);
       setDietaryRestrictions(profile.dietaryRestrictions);
@@ -111,14 +115,13 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
   };
 
   const handleTurnstileSuccess = async (token: string) => {
-    setSaveLoading(true);
-    
-    const bundledSchoolYear = `${gradMonth}, ${gradYear}, ${degree}`;
-    
+    setSaveLoading(true);    
     try {
       await updateProfile(
         {
-          schoolYear: bundledSchoolYear as RsvpProfile['schoolYear'],
+          gradYear: parseInt(gradYear, 10),
+          gradMonth: gradMonth,
+          expectedDegree: degree,
           intendedMajor,
           interests,
           dietaryRestrictions,
@@ -144,12 +147,10 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
     if (!profile) return 0;
     let completed = 0;
     const total = 4;
-    
-    if (profile.schoolYear) completed++;
+    if (profile.gradYear && profile.gradMonth && profile.expectedDegree) completed++;
     if (profile.intendedMajor) completed++;
     if (profile.interests.length > 0) completed++;
     if (profile.dietaryRestrictions.length > 0) completed++;
-    
     return Math.round((completed / total) * 100);
   };
 
@@ -304,7 +305,9 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
                       <IconSchool size={16} stroke={1.5} />
                       <Text size="sm" c="dimmed">Graduation</Text>
                     </Group>
-                    <Badge size="lg" variant="light">{profile?.schoolYear}</Badge>
+                    <Badge size="lg" variant="light">
+                      {profile?.gradMonth} {profile?.gradYear} — {profile?.expectedDegree}
+                    </Badge>
                   </Box>
 
                   <Box>

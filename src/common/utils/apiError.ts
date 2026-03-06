@@ -5,7 +5,7 @@ export interface ApiError {
 }
 
 const STATUS_TITLES: Record<number, string> = {
-  400: 'Bad Request',
+  400: 'Pending Provision',
   401: 'Unauthorized',
   403: 'Permission Denied',
   404: 'Not Found',
@@ -16,19 +16,27 @@ const STATUS_TITLES: Record<number, string> = {
 };
 
 export class ApiRequestError extends Error {
+  readonly title: string;
+  readonly requestId?: string;
+  readonly isProfileRequired: boolean;
+
   constructor(
     message: string,
-    public readonly title: string,
-    public readonly requestId?: string,
-    public readonly isProfileRequired = false,
+    title: string,
+    requestId?: string,
+    isProfileRequired = false,
   ) {
     super(message);
     this.name = 'ApiRequestError';
+    this.title = title;
+    this.requestId = requestId;
+    this.isProfileRequired = isProfileRequired;
   }
 }
 
 export async function parseApiError(response: Response, fallbackTitle = 'Request Failed'): Promise<ApiError> {
-  const requestId = response.headers.get('x-request-id') ?? undefined;
+  console.log("HELLO " + response)
+  const requestId = response.headers.get('X-Request-Id') ?? undefined;
   const title = STATUS_TITLES[response.status] ?? fallbackTitle;
 
   let message = `An error occurred (Status: ${response.status})`;
