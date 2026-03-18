@@ -1,17 +1,18 @@
-import { 
-  Group, 
-  Burger, 
-  Title, 
-  Menu, 
-  Button, 
-  Avatar, 
-  Text, 
-  rem 
+import {
+  Group,
+  Burger,
+  Menu,
+  Button,
+  Avatar,
+  Text,
+  ActionIcon,
+  rem
 } from "@mantine/core";
-import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
+import { IconChevronDown, IconLogout, IconUser, IconSun, IconMoon } from "@tabler/icons-react";
 import { useAuth } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
 import LogoBadge from "../Logo";
+import { useColorScheme } from "../../App";
 
 interface HeaderProps {
   opened: boolean;
@@ -21,6 +22,7 @@ interface HeaderProps {
 export function Header({ opened, toggle }: HeaderProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [colorScheme, setColorScheme] = useColorScheme();
 
   const formattedName = user?.name 
   ? user.name.split(',').map(part => part.trim()).reverse().join(' ') 
@@ -33,7 +35,17 @@ export function Header({ opened, toggle }: HeaderProps) {
         <LogoBadge size="1em" linkTo="/" showText={true} />
       </Group>
 
-      <Menu shadow="md" width={200}>
+      <Group gap="xs">
+        <ActionIcon
+          variant="subtle"
+          size="lg"
+          onClick={() => setColorScheme(s => s === 'dark' ? 'light' : 'dark')}
+          aria-label="Toggle color scheme"
+        >
+          {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+        </ActionIcon>
+
+        <Menu shadow="md" width={200}>
         <Menu.Target>
           <Button variant="subtle" rightSection={<IconChevronDown size={14} />}>
             <Group gap={7}>
@@ -61,7 +73,8 @@ export function Header({ opened, toggle }: HeaderProps) {
             Logout
           </Menu.Item>
         </Menu.Dropdown>
-      </Menu>
+        </Menu>
+      </Group>
     </Group>
   );
 }
