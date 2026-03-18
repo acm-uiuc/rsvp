@@ -49,6 +49,9 @@ export function UpcomingEventsPage() {
         try { text = await err.response.text(); } catch { /* ignore */ }
         const message = parseBodyText(text);
 
+        if (text.includes('is not a valid URL')) {
+          throw new ApiRequestError('RSVP registration has not been enabled yet.', 'Registration Unavailable', requestId);
+        }
         if (status === 400) {
           if (
             text.toLowerCase().includes('profile') ||
