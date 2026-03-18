@@ -3,10 +3,8 @@ import {
   Paper,
   Group,
   PaperProps,
-  Divider,
   Center,
   Alert,
-  Anchor,
   Title,
 } from "@mantine/core";
 import { IconLock } from "@tabler/icons-react";
