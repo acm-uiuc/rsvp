@@ -22,9 +22,7 @@ export function UpcomingEventsPage() {
   const rsvpedEventIds = useMemo(() => new Set(rsvps.map(r => r.eventId)), [rsvps]);
 
   const rsvpEvents = useMemo(() =>
-    events
-      .filter(e => e.rsvpEnabled)
-      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
+    [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
     [events]
   );
 

@@ -28,7 +28,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const api = new EventsApi(new Configuration({ basePath: config.apiBaseUrl }));
-      const data = await api.apiV1EventsGet();
+      const data = await api.apiV1EventsGet({ rsvpOnly: true, upcomingOnly: true });
       setEvents(data);
     } catch (err) {
       setError(toApiError(err));
