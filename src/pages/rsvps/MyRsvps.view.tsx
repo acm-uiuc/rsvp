@@ -1,82 +1,59 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Title, Text, Container, Card, Button, Group, Stack,
-  Loader, Alert, Box, Modal, Badge, Divider, ActionIcon, TextInput
+  Loader, Alert, Box, Modal, Badge, Divider, ActionIcon, TextInput, Collapse, UnstyledButton
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
 import {
   IconTicket, IconCalendar, IconClock,
-  IconMapPin, IconTrash, IconInfoCircle, IconRefresh, IconSearch
+  IconMapPin, IconTrash, IconInfoCircle, IconRefresh, IconSearch, IconChevronDown, IconChevronRight
 } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { config } from '../../config';
 import { ApiErrorAlert } from '../../components/ApiErrorAlert';
 import { ApiError, toApiError } from '../../common/utils/apiError';
-
-export interface EnrichedRsvp {
-  eventId: string;
-  title: string;
-  description?: string;
-  eventDate: string;
-  eventTime?: string;
-  location?: string;
-  registeredDate: string;
-  startTime?: string;
-  endTime?: string;
-  featured?: boolean;
-}
+import { EnrichedRsvp } from '../../common/types/rsvp';
 
 interface MyRsvpsViewProps {
-  getRsvps: () => Promise<EnrichedRsvp[]>;
+  rsvps: EnrichedRsvp[];
+  loading: boolean;
+  loadError: ApiError | null;
+  onLoadErrorClose: () => void;
   onCancelRsvp: (eventId: string, turnstileToken: string) => Promise<void>;
   navigateEvents: () => void;
-  onRefresh: () => Promise<EnrichedRsvp[]>;
+  onRefresh: () => void;
 }
 
-export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh }: MyRsvpsViewProps) {
-  const [rsvps, setRsvps] = useState<EnrichedRsvp[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
+export function MyRsvpsView({
+  rsvps,
+  loading,
+  loadError,
+  onLoadErrorClose,
+  onCancelRsvp,
+  navigateEvents,
+  onRefresh,
+}: MyRsvpsViewProps) {
   const [search, setSearch] = useState('');
 
+  const [pastOpen, setPastOpen] = useState(false);
   const [cancelModalOpened, { open: openCancelModal, close: closeCancelModal }] = useDisclosure(false);
   const [selectedRsvp, setSelectedRsvp] = useState<EnrichedRsvp | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<ApiError | null>(null);
+  const [cancelConfirmed, setCancelConfirmed] = useState(false);
 
-  useEffect(() => {
-    loadRsvps();
-  }, [getRsvps]);
-
-  const loadRsvps = async () => {
-    try {
-      const data = await getRsvps();
-      setRsvps(data);
-      setError(null);
-    } catch (err: unknown) {
-      console.error(err);
-      setError(toApiError(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefreshClick = async () => {
-    setLoading(true);
-    try {
-      const freshData = await onRefresh();
-      setRsvps(freshData);
-    } catch (error) {
-      console.error("Refresh failed", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelClick = (rsvp: EnrichedRsvp) => {
+  const handleOpenCancelModal = (rsvp: EnrichedRsvp) => {
     setSelectedRsvp(rsvp);
     setCancelError(null);
+    setCancelConfirmed(false);
     openCancelModal();
+  };
+
+  const handleCancelModalClose = () => {
+    if (cancelLoading) return;
+    setCancelConfirmed(false);
+    closeCancelModal();
   };
 
   const handleTurnstileSuccess = async (token: string) => {
@@ -86,36 +63,24 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
 
     try {
       await onCancelRsvp(selectedRsvp.eventId, token);
-
-      setRsvps(prev => prev.filter(r => r.eventId !== selectedRsvp.eventId));
-
       closeCancelModal();
-
-      setTimeout(() => {
-        alert(`Successfully cancelled RSVP for ${selectedRsvp.title}`);
-      }, 100);
-
+      notifications.show({
+        title: 'RSVP Cancelled',
+        message: `Successfully cancelled RSVP for ${selectedRsvp.title}`,
+        color: 'green',
+      });
     } catch (e: unknown) {
-      console.error(e);
       setCancelError(toApiError(e));
     } finally {
       setCancelLoading(false);
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   const isPastEvent = (rsvp: EnrichedRsvp): boolean => {
-    // If there's an end time, the event is only past once it has ended
     if (rsvp.endTime) return new Date(rsvp.endTime) < new Date();
-    // If no end time, fall back to start time
     if (rsvp.startTime) return new Date(rsvp.startTime) < new Date();
     return false;
   };
@@ -154,12 +119,11 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             <Title order={2}>My RSVPs</Title>
             <Text c="dimmed">View and manage your event registrations</Text>
           </Box>
-          <Group gap="xs"> 
+          <Group gap="xs">
             <Button variant="light" onClick={navigateEvents} leftSection={<IconTicket size={16} />}>
               Browse Events
             </Button>
-            
-            <Button variant="outline" onClick={handleRefreshClick} leftSection={<IconRefresh size={16} />}>
+            <Button variant="outline" onClick={onRefresh} leftSection={<IconRefresh size={16} />}>
               Refresh
             </Button>
           </Group>
@@ -174,7 +138,7 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         />
       </Stack>
 
-      <ApiErrorAlert error={error} onClose={() => setError(null)} />
+      <ApiErrorAlert error={loadError} onClose={onLoadErrorClose} />
 
       {loading ? (
         <Group justify="center" py="xl">
@@ -201,8 +165,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
         </Card>
       ) : (
         <Stack gap="xl">
-
-          {/* Ongoing Events */}
           {ongoingRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -219,23 +181,16 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
                         <Group mb="xs" gap="xs">
                           <Title order={4}>{rsvp.title}</Title>
                           <Badge color="teal" variant="filled" size="sm">Live Now</Badge>
-                          {rsvp.featured && (
-                            <Badge color="orange" variant="light" size="sm">Featured</Badge>
-                          )}
+                          {rsvp.featured && <Badge color="orange" variant="light" size="sm">Featured</Badge>}
                         </Group>
-
                         {rsvp.description && (
-                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>
-                            {rsvp.description}
-                          </Text>
+                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>{rsvp.description}</Text>
                         )}
-
                         <Stack gap="xs" mt="sm">
                           <Group gap="xs">
                             <IconCalendar size={16} stroke={1.5} />
                             <Text size="sm">{rsvp.eventDate}</Text>
                           </Group>
-
                           {rsvp.startTime && (
                             <Group gap="xs">
                               <IconClock size={16} stroke={1.5} />
@@ -245,21 +200,16 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
                               </Text>
                             </Group>
                           )}
-
                           {rsvp.location && (
                             <Group gap="xs">
                               <IconMapPin size={16} stroke={1.5} />
                               <Text size="sm" lineClamp={1}>{rsvp.location}</Text>
                             </Group>
                           )}
-
                           <Divider my="xs" />
-
                           <Group gap="xs">
                             <IconInfoCircle size={14} stroke={1.5} />
-                            <Text size="xs" c="dimmed">
-                              Registered on {rsvp.registeredDate}
-                            </Text>
+                            <Text size="xs" c="dimmed">Registered on {rsvp.registeredDate}</Text>
                           </Group>
                         </Stack>
                       </Box>
@@ -270,7 +220,6 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             </Box>
           )}
 
-          {/* Upcoming Events */}
           {upcomingRsvps.length > 0 && (
             <Box>
               <Group mb="md">
@@ -284,23 +233,16 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
                       <Box style={{ flex: 1 }}>
                         <Group mb="xs" gap="xs">
                           <Title order={4}>{rsvp.title}</Title>
-                          {rsvp.featured && (
-                            <Badge color="orange" variant="light" size="sm">Featured</Badge>
-                          )}
+                          {rsvp.featured && <Badge color="orange" variant="light" size="sm">Featured</Badge>}
                         </Group>
-
                         {rsvp.description && (
-                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>
-                            {rsvp.description}
-                          </Text>
+                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>{rsvp.description}</Text>
                         )}
-
                         <Stack gap="xs" mt="sm">
                           <Group gap="xs">
                             <IconCalendar size={16} stroke={1.5} />
                             <Text size="sm">{rsvp.eventDate}</Text>
                           </Group>
-
                           {rsvp.startTime && (
                             <Group gap="xs">
                               <IconClock size={16} stroke={1.5} />
@@ -310,30 +252,24 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
                               </Text>
                             </Group>
                           )}
-
                           {rsvp.location && (
                             <Group gap="xs">
                               <IconMapPin size={16} stroke={1.5} />
                               <Text size="sm" lineClamp={1}>{rsvp.location}</Text>
                             </Group>
                           )}
-
                           <Divider my="xs" />
-
                           <Group gap="xs">
                             <IconInfoCircle size={14} stroke={1.5} />
-                            <Text size="xs" c="dimmed">
-                              Registered on {rsvp.registeredDate}
-                            </Text>
+                            <Text size="xs" c="dimmed">Registered on {rsvp.registeredDate}</Text>
                           </Group>
                         </Stack>
                       </Box>
-
                       <ActionIcon
                         color="red"
                         variant="subtle"
                         size="lg"
-                        onClick={() => handleCancelClick(rsvp)}
+                        onClick={() => handleOpenCancelModal(rsvp)}
                         title="Cancel RSVP"
                       >
                         <IconTrash size={20} />
@@ -345,64 +281,60 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
             </Box>
           )}
 
-          {/* Past Events */}
           {pastRsvps.length > 0 && (
             <Box>
-              <Group mb="md">
-                <IconClock size={20} stroke={1.5} />
-                <Title order={3}>Past Events ({pastRsvps.length})</Title>
-              </Group>
-              <Stack gap="md">
-                {pastRsvps.map((rsvp) => (
-                  <Card key={rsvp.eventId} shadow="sm" padding="lg" radius="md" withBorder opacity={0.7}>
-                    <Box>
-                      <Group mb="xs" gap="xs">
-                        <Title order={4} c="dimmed">{rsvp.title}</Title>
-                        <Badge color="gray" variant="light" size="sm">Past</Badge>
-                      </Group>
-
-                      {rsvp.description && (
-                        <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>
-                          {rsvp.description}
-                        </Text>
-                      )}
-
-                      <Stack gap="xs" mt="sm">
-                        <Group gap="xs">
-                          <IconCalendar size={16} stroke={1.5} />
-                          <Text size="sm" c="dimmed">{rsvp.eventDate}</Text>
+              <UnstyledButton onClick={() => setPastOpen(o => !o)} style={{ width: '100%' }}>
+                <Group mb={pastOpen ? 'md' : 0}>
+                  {pastOpen ? <IconChevronDown size={20} stroke={1.5} /> : <IconChevronRight size={20} stroke={1.5} />}
+                  <Title order={3}>Past Events ({pastRsvps.length})</Title>
+                </Group>
+              </UnstyledButton>
+              <Collapse in={pastOpen}>
+                <Stack gap="md" mt="md">
+                  {pastRsvps.map((rsvp) => (
+                    <Card key={rsvp.eventId} shadow="sm" padding="lg" radius="md" withBorder opacity={0.7}>
+                      <Box>
+                        <Group mb="xs" gap="xs">
+                          <Title order={4} c="dimmed">{rsvp.title}</Title>
+                          <Badge color="gray" variant="light" size="sm">Past</Badge>
                         </Group>
-
-                        {rsvp.startTime && (
-                          <Group gap="xs">
-                            <IconClock size={16} stroke={1.5} />
-                            <Text size="sm" c="dimmed">
-                              {formatTime(rsvp.startTime)}
-                              {rsvp.endTime && ` - ${formatTime(rsvp.endTime)}`}
-                            </Text>
-                          </Group>
+                        {rsvp.description && (
+                          <Text size="sm" c="dimmed" mb="sm" lineClamp={2}>{rsvp.description}</Text>
                         )}
-
-                        {rsvp.location && (
+                        <Stack gap="xs" mt="sm">
                           <Group gap="xs">
-                            <IconMapPin size={16} stroke={1.5} />
-                            <Text size="sm" c="dimmed" lineClamp={1}>{rsvp.location}</Text>
+                            <IconCalendar size={16} stroke={1.5} />
+                            <Text size="sm" c="dimmed">{rsvp.eventDate}</Text>
                           </Group>
-                        )}
-                      </Stack>
-                    </Box>
-                  </Card>
-                ))}
-              </Stack>
+                          {rsvp.startTime && (
+                            <Group gap="xs">
+                              <IconClock size={16} stroke={1.5} />
+                              <Text size="sm" c="dimmed">
+                                {formatTime(rsvp.startTime)}
+                                {rsvp.endTime && ` - ${formatTime(rsvp.endTime)}`}
+                              </Text>
+                            </Group>
+                          )}
+                          {rsvp.location && (
+                            <Group gap="xs">
+                              <IconMapPin size={16} stroke={1.5} />
+                              <Text size="sm" c="dimmed" lineClamp={1}>{rsvp.location}</Text>
+                            </Group>
+                          )}
+                        </Stack>
+                      </Box>
+                    </Card>
+                  ))}
+                </Stack>
+              </Collapse>
             </Box>
           )}
-
         </Stack>
       )}
 
       <Modal
         opened={cancelModalOpened}
-        onClose={() => !cancelLoading && closeCancelModal()}
+        onClose={handleCancelModalClose}
         title="Cancel RSVP"
         centered
         withCloseButton={!cancelLoading}
@@ -411,32 +343,35 @@ export function MyRsvpsView({ getRsvps, onCancelRsvp, navigateEvents, onRefresh 
           {cancelError ? (
             <>
               <ApiErrorAlert error={cancelError} />
-              <Button onClick={closeCancelModal} fullWidth mt="md">
-                Close
-              </Button>
+              <Button onClick={handleCancelModalClose} fullWidth mt="md">Close</Button>
             </>
           ) : cancelLoading ? (
             <Stack align="center" gap="md">
               <Loader size="lg" />
               <Text size="sm" c="dimmed">Cancelling your RSVP...</Text>
             </Stack>
-          ) : (
+          ) : !cancelConfirmed ? (
             <>
-              <Alert icon={<IconInfoCircle />} color="blue" mb="md">
+              <Alert icon={<IconInfoCircle />} color="orange" mb="md">
                 Are you sure you want to cancel your RSVP for <strong>{selectedRsvp?.title}</strong>?
               </Alert>
               <Text size="sm" c="dimmed" ta="center" mb="md">
                 This action cannot be undone. You'll need to RSVP again if you change your mind.
               </Text>
-              <Stack align="center">
-                <Turnstile
-                  siteKey={config.turnstileSiteKey}
-                  options={{ size: 'flexible' }}
-                  onSuccess={handleTurnstileSuccess}
-                />
-                <Text size="xs" c="dimmed">Security Check</Text>
-              </Stack>
+              <Group grow>
+                <Button variant="default" onClick={handleCancelModalClose}>Keep it</Button>
+                <Button color="red" onClick={() => setCancelConfirmed(true)}>Yes, cancel RSVP</Button>
+              </Group>
             </>
+          ) : (
+            <Stack align="center">
+              <Text size="sm" c="dimmed">Complete the security check to confirm.</Text>
+              <Turnstile
+                siteKey={config.turnstileSiteKey}
+                options={{ size: 'flexible' }}
+                onSuccess={handleTurnstileSuccess}
+              />
+            </Stack>
           )}
         </Stack>
       </Modal>

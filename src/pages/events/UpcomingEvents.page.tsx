@@ -1,92 +1,80 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MainLayout } from '../../components/Layout';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
 import { useAuth } from '../../components/AuthContext';
+import { useEvents } from '../../components/EventsContext';
+import { useRsvps } from '../../components/RsvpsContext';
 import { UpcomingEventsView } from './UpcomingEvents.view';
-import { apiCache, CacheTTL } from '../../common/utils/apiCache';
-import { ApiRequestError } from '../../common/utils/apiError';
+import { ApiRequestError, parseBodyText } from '../../common/utils/apiError';
+import { Configuration, RSVPApi, ResponseError } from '@acm-uiuc/core-client';
 
 export function UpcomingEventsPage() {
   const { getToken } = useAuth();
+  const { events, loading, error: eventsError, refetch: refetchEvents } = useEvents();
+  const { rsvps, refetch: refetchRsvps } = useRsvps();
 
-  const getEvents = useCallback(async (): Promise<Event[]> => {
-    return apiCache.getOrFetch(
-      'events:upcoming',
-      async () => {
-        const response = await fetch(config.apiBaseUrl + '/api/v1/events?rsvpOnly=true', {
-          cache: 'no-store'
-        });
-        if (!response.ok) {
-          throw new ApiRequestError(
-            'Failed to fetch events',
-            'Failed to Load Events',
-            response.headers.get('x-request-id') ?? undefined,
-          );
-        }
-        const events: Event[] = await response.json();
-        return events.sort((a, b) => 
-          new Date(a.start).getTime() - new Date(b.start).getTime()
-        );
-      },
-      CacheTTL.SHORT
-    );
-  }, []);
+  const [errorHidden, setErrorHidden] = useState(false);
+  useEffect(() => { if (eventsError) setErrorHidden(false); }, [eventsError]);
 
-  const handleRefresh = useCallback(async () => {
-    apiCache.invalidate('events:upcoming');
-    console.log("events that shld have been erased");
-    console.log(apiCache.get('events:upcoming'));
-    return getEvents();
-  }, [getEvents]);
+  const rsvpedEventIds = useMemo(() => new Set(rsvps.map(r => r.eventId)), [rsvps]);
+
+  const rsvpEvents = useMemo(() =>
+    events
+      .filter(e => e.rsvpEnabled)
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
+    [events]
+  );
 
   const handleRsvp = useCallback(async (event: Event, turnstileToken: string) => {
-    const authToken = await getToken();
-    
-    const response = await fetch(config.apiBaseUrl + `/api/v1/rsvp/event/${event.id}`, {
-      method: 'POST',
-      headers: {
-        'x-uiuc-token': authToken || '',
-        'x-turnstile-response': turnstileToken,
-      },
-    });
+    const xUiucToken = await getToken();
+    const api = new RSVPApi(new Configuration({ basePath: config.apiBaseUrl }));
 
-    if (!response.ok) {
-      const errData = await response.text();
-      const requestId = response.headers.get('x-request-id') ?? undefined;
+    try {
+      const raw = await api.apiV1RsvpEventEventIdPostRaw({
+        eventId: event.id,
+        xUiucToken: xUiucToken || '',
+        xTurnstileResponse: turnstileToken,
+      });
+      // 201 response body may be empty; don't parse it
+      if (!raw.raw.ok) throw new Error('Unexpected response');
+      await refetchRsvps();
+    } catch (err) {
+      if (err instanceof ResponseError) {
+        const { status, headers } = err.response;
+        const requestId = headers.get('x-request-id') ?? undefined;
+        let text = '';
+        try { text = await err.response.text(); } catch { /* ignore */ }
+        const message = parseBodyText(text);
 
-      if (response.status === 400) {
-        if (
-          errData.toLowerCase().includes('profile') ||
-          errData.toLowerCase().includes('complete') ||
-          errData.toLowerCase().includes('required')
-        ) {
-          throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required');
+        if (status === 400) {
+          if (
+            text.toLowerCase().includes('profile') ||
+            text.toLowerCase().includes('complete') ||
+            text.toLowerCase().includes('required')
+          ) {
+            throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required');
+          }
+          throw new ApiRequestError(message || 'Bad request', 'Bad Request', requestId);
         }
-        throw new ApiRequestError(errData || 'Bad request', 'Bad Request', requestId);
+        if (status === 409) throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered');
+        if (status === 403) throw new ApiRequestError('This event is at full capacity.', 'Event Full');
+        throw new ApiRequestError(message || 'Failed to RSVP', 'Request Failed', requestId);
       }
-
-      if (response.status === 409) {
-        throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered');
-      }
-
-      if (response.status === 403) {
-        throw new ApiRequestError('This event is at full capacity.', 'Event Full');
-      }
-
-      throw new ApiRequestError(errData || 'Failed to RSVP', 'Request Failed', requestId);
+      throw err;
     }
-
-    apiCache.invalidate('rsvps:my');
-    apiCache.invalidate('events:upcoming');
-  }, [getToken]);
+  }, [getToken, refetchRsvps]);
 
   return (
     <MainLayout>
-      <UpcomingEventsView 
-        getEvents={getEvents}
+      <UpcomingEventsView
+        events={rsvpEvents}
+        rsvpedEventIds={rsvpedEventIds}
+        loading={loading}
+        loadError={errorHidden ? null : eventsError}
+        onLoadErrorClose={() => setErrorHidden(true)}
         onRsvp={handleRsvp}
-        onRefresh={handleRefresh}
+        onRefresh={refetchEvents}
       />
     </MainLayout>
   );

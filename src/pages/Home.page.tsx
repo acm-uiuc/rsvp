@@ -1,108 +1,40 @@
-import { useEffect, useState } from 'react';
-
-import { 
-  Title, 
-  Text, 
-  Container, 
-  SimpleGrid, 
-  Card, 
-  ThemeIcon, 
-  Button, 
+import {
+  Title,
+  Text,
+  Container,
+  SimpleGrid,
+  Card,
+  ThemeIcon,
+  Button,
   Stack,
   Group,
   Badge,
   Loader,
+  Anchor,
   Divider,
   Box,
 } from '@mantine/core';
 import { IconCalendarEvent, IconTicket, IconSettings, IconCalendar, IconClock, IconMapPin } from '@tabler/icons-react';
 import { useAuth } from '../components/AuthContext';
 import { useProfile } from '../components/ProfileContext';
+import { useRsvps } from '../components/RsvpsContext';
 import { MainLayout } from '../components/Layout/index';
 import FullScreenLoader from '../components/AuthContext/LoadingScreen';
 import { useNavigate } from 'react-router-dom';
-import { config } from '../config';
-import { RsvpItem } from '../common/types/rsvp';
-import { Event } from '../common/types/event';
-import { EnrichedRsvp } from './rsvps/MyRsvps.view';
-import { apiCache, CacheTTL } from '../common/utils/apiCache';
+import { useEffect } from 'react';
+import { EnrichedRsvp } from '../common/types/rsvp';
 
 export function HomePage() {
-  const { user, isLoggedIn, getToken } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const { rsvps, loading: rsvpsLoading } = useRsvps();
   const navigate = useNavigate();
-
-  const [rsvps, setRsvps] = useState<EnrichedRsvp[]>([]);
-  const [rsvpsLoading, setRsvpsLoading] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn && !profileLoading && !profile) {
-      navigate("/profile?firstTime=true", { replace: true });
+      navigate('/profile?firstTime=true', { replace: true });
     }
   }, [isLoggedIn, profileLoading, profile, navigate]);
-
-  useEffect(() => {
-    const loadRsvps = async () => {
-      if (!isLoggedIn || !user) return;
-      setRsvpsLoading(true);
-      try {
-        const token = await getToken();
-        if (!token) return;
-
-        const enriched = await apiCache.getOrFetch(
-          'rsvps:my',
-          async () => {
-            const [rsvpRes, eventsRes] = await Promise.all([
-              fetch(config.apiBaseUrl + '/api/v1/rsvp/me', {
-                headers: { 'x-uiuc-token': token, 'Content-Type': 'application/json' }
-              }),
-              fetch(config.apiBaseUrl + '/api/v1/events', { cache: 'no-store' })
-            ]);
-
-            if (!rsvpRes.ok) return [];
-
-            const rsvpData: RsvpItem[] = await rsvpRes.json();
-            const eventsData: Event[] = eventsRes.ok ? await eventsRes.json() : [];
-
-            const eventsMap: Record<string, Event> = {};
-            eventsData.forEach(e => { eventsMap[e.id] = e; });
-
-            return rsvpData.map(r => {
-              const event = eventsMap[r.eventId];
-              return {
-                eventId: r.eventId,
-                title: event?.title || 'Unknown Event',
-                description: event?.description,
-                eventDate: event?.start
-                  ? new Date(event.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                  : 'N/A',
-                eventTime: event?.start ? new Date(event.start).toLocaleTimeString() : undefined,
-                location: event?.location,
-                registeredDate: r.createdAt
-                  ? new Date(r.createdAt * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                  : 'N/A',
-                startTime: event?.start,
-                endTime: event?.end,
-                featured: event?.featured,
-              };
-            }).sort((a, b) => {
-              const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
-              const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
-              return dateB - dateA;
-            });
-          },
-          CacheTTL.MEDIUM
-        );
-
-        setRsvps(enriched);
-      } catch (err) {
-        console.error('Failed to load RSVPs for homepage', err);
-      } finally {
-        setRsvpsLoading(false);
-      }
-    };
-    loadRsvps();
-  }, [isLoggedIn, user, getToken]);
 
   const isOngoingEvent = (rsvp: EnrichedRsvp): boolean => {
     if (!rsvp.startTime || !rsvp.endTime) return false;
@@ -117,8 +49,6 @@ export function HomePage() {
 
   const ongoingRsvps = rsvps.filter(r => isOngoingEvent(r));
   const upcomingRsvps = rsvps.filter(r => isUpcomingEvent(r));
-
-  // Combine for homepage preview: ongoing first, then upcoming, capped at 3 total
   const previewRsvps = [...ongoingRsvps, ...upcomingRsvps].slice(0, 3);
   const totalActive = ongoingRsvps.length + upcomingRsvps.length;
 
@@ -128,9 +58,8 @@ export function HomePage() {
     { title: 'Profile', icon: IconSettings, color: 'gray', desc: 'Update your resume and dietary info', path: '/profile' },
   ];
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   if (profileLoading && isLoggedIn) return <FullScreenLoader />;
 
@@ -138,13 +67,11 @@ export function HomePage() {
     <MainLayout>
       <Container size="lg" py="xl">
         <Stack gap="xl">
-          {/* Welcome Banner */}
           <div>
             <Title order={2}>Welcome back, {user?.name?.split(' ')[1] || 'Friend'}!</Title>
             <Text c="dimmed">Select an action to get started.</Text>
           </div>
 
-          {/* Quick Actions Grid */}
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
             {actions.map((item) => (
               <Card key={item.title} shadow="sm" padding="lg" radius="md" withBorder>
@@ -164,7 +91,6 @@ export function HomePage() {
             ))}
           </SimpleGrid>
 
-          {/* My RSVPs — minimal preview */}
           {isLoggedIn && (
             <Box>
               <Divider mb="lg" />
@@ -180,12 +106,12 @@ export function HomePage() {
                   <Loader size="sm" type="dots" />
                 </Group>
               ) : previewRsvps.length === 0 ? (
-                <Text size="sm" c="dimmed">
-                  No upcoming RSVPs.{' '}
-                  <Button variant="subtle" size="xs" p={0} onClick={() => navigate('/events')}>
+                <Group gap={4} align="center">
+                  <Text size="sm" c="dimmed">No upcoming RSVPs.</Text>
+                  <Anchor size="sm" onClick={() => navigate('/events')} style={{ cursor: 'pointer' }}>
                     Browse events →
-                  </Button>
-                </Text>
+                  </Anchor>
+                </Group>
               ) : (
                 <Stack gap="xs">
                   {previewRsvps.map((rsvp) => {

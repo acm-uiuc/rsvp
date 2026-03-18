@@ -32,7 +32,7 @@ export function LoginComponent(props: PaperProps) {
 
       <Center>
         <Text size="lg" fw={500}>
-          Welcome to the ACM@UIUC Management Portal
+          Welcome to the ACM@UIUC RSVP Portal
         </Text>
       </Center>
 

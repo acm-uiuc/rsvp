@@ -4,7 +4,6 @@ import {
   Title, Text, Container, Card, Button, Group, Stack,
   Loader, Alert, Modal, TextInput, Select, MultiSelect,
   Badge, ActionIcon, Box, Progress, Tooltip, SimpleGrid,
-  Notification
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
@@ -12,6 +11,7 @@ import {
   IconEdit, IconCheck, IconX, IconUser,
   IconSchool, IconStar, IconApple, IconAlertCircle
 } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { config } from '../../config';
 import { RsvpProfile, COMMON_INTERESTS } from '../../common/types/rsvp';
 import { ALL_MAJORS } from '@acm-uiuc/js-shared';
@@ -87,11 +87,19 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
 
   const handleSaveClick = () => {
     if (!gradMonth || !gradYear || !degree) {
-      alert('Please fill out your graduation month, year, and degree.');
+      notifications.show({
+        title: 'Missing fields',
+        message: 'Please fill out your graduation month, year, and degree.',
+        color: 'red',
+      });
       return;
     }
     if (!intendedMajor) {
-      alert('Please select your major');
+      notifications.show({
+        title: 'Missing fields',
+        message: 'Please select your major.',
+        color: 'red',
+      });
       return;
     }
     open();
@@ -121,13 +129,22 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
 
       setIsEditing(false);
       close();
-      
+
       if (isFirstTime) {
         navigate('/home', { replace: true });
+      } else {
+        notifications.show({
+          title: 'Profile saved',
+          message: 'Your profile has been updated successfully.',
+          color: 'green',
+        });
       }
     } catch (e: any) {
-      console.error(e);
-      alert(e.message || 'Failed to update profile');
+      notifications.show({
+        title: 'Save failed',
+        message: e.message || 'Failed to update profile',
+        color: 'red',
+      });
     } finally {
       setSaveLoading(false);
     }

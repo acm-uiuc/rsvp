@@ -45,8 +45,8 @@ export const LogoBadge: React.FC<LogoBadgeProps> = ({
         />
         {showText
           ? isNonProd && runEnv
-            ? `Management Portal ${runEnv.toUpperCase().replace("LOCAL-DEV", "DEV")} ENV`
-            : "Management Portal"
+            ? `RSVP Portal ${runEnv.toUpperCase().replace("LOCAL-DEV", "DEV")} ENV`
+            : "RSVP Portal"
           : null}
       </Link>
     </b>

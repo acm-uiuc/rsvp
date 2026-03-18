@@ -1,7 +1,20 @@
 export interface RsvpItem {
-  createdAt: number; 
+  createdAt: number;
   eventId: string;
   userId: string;
+}
+
+export interface EnrichedRsvp {
+  eventId: string;
+  title: string;
+  description?: string;
+  eventDate: string;
+  eventTime?: string;
+  location?: string;
+  registeredDate: string;
+  startTime?: string;
+  endTime?: string;
+  featured?: boolean;
 }
 
 export interface RsvpProfile {

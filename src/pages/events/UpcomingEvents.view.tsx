@@ -1,55 +1,47 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Title, Text, Container, SimpleGrid, Card, Badge, Button, Group, Stack, 
+import {
+  Title, Text, Container, SimpleGrid, Card, Badge, Button, Group, Stack,
   Loader, Box, Modal, Divider, TextInput
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { 
-  IconAlertCircle, IconTicket, IconCalendar, IconClock, 
+import {
+  IconAlertCircle, IconTicket, IconCalendar, IconClock,
   IconMapPin, IconRefresh, IconCheck, IconSearch
 } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
 import { ApiErrorAlert } from '../../components/ApiErrorAlert';
 import { ApiError, ApiRequestError, toApiError } from '../../common/utils/apiError';
 
 interface UpcomingEventsViewProps {
-  getEvents: () => Promise<Event[]>;
+  events: Event[];
+  rsvpedEventIds: Set<string>;
+  loading: boolean;
+  loadError: ApiError | null;
+  onLoadErrorClose: () => void;
   onRsvp: (event: Event, turnstileToken: string) => Promise<void>;
-  onRefresh: () => Promise<Event[]>;
+  onRefresh: () => void;
 }
 
-export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEventsViewProps) {
+export function UpcomingEventsView({
+  events,
+  rsvpedEventIds,
+  loading,
+  loadError,
+  onLoadErrorClose,
+  onRsvp,
+  onRefresh,
+}: UpcomingEventsViewProps) {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [rsvpedEvents, setRsvpedEvents] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
 
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState<ApiError | 'profile' | null>(null);
-
-  useEffect(() => {
-    loadEvents();
-  }, [getEvents]);
-
-  const loadEvents = async () => {
-    try {
-      const data = await getEvents();
-      setEvents(data);
-      setError(null);
-    } catch (err: unknown) {
-      console.error(err);
-      setError(toApiError(err));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,29 +59,20 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     open();
   };
 
-  const handleRefreshClick = async () => {
-    setLoading(true);
-    try {
-      const freshData = await onRefresh();
-      setEvents(freshData);
-    } catch (error) {
-      console.error("Refresh failed", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleTurnstileSuccess = async (token: string) => {
     if (!selectedEvent) return;
     setRsvpLoading(true);
     setRsvpError(null);
-    
+
     try {
       await onRsvp(selectedEvent, token);
-      setRsvpedEvents(prev => new Set(prev).add(selectedEvent.id));
       close();
+      notifications.show({
+        title: 'RSVP Confirmed',
+        message: `You're registered for ${selectedEvent.title}!`,
+        color: 'green',
+      });
     } catch (e: unknown) {
-      console.error(e);
       if (e instanceof ApiRequestError && e.isProfileRequired) {
         setRsvpError('profile');
       } else {
@@ -105,17 +88,13 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
     navigate('/profile?firstTime=true');
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
     });
-  };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   return (
     <Container size="xl" py="xl">
@@ -125,7 +104,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
             <Title order={2}>Upcoming Events</Title>
             <Text c="dimmed">Discover and RSVP to events hosted by ACM @ UIUC.</Text>
           </Box>
-          <Button variant="outline" onClick={handleRefreshClick} leftSection={<IconRefresh size={16} />}>
+          <Button variant="outline" onClick={onRefresh} leftSection={<IconRefresh size={16} />}>
             Refresh
           </Button>
         </Group>
@@ -139,7 +118,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
         />
       </Stack>
 
-      <ApiErrorAlert error={error} onClose={() => setError(null)} />
+      <ApiErrorAlert error={loadError} onClose={onLoadErrorClose} />
 
       {loading ? (
         <Group justify="center" py="xl">
@@ -156,9 +135,7 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
               {search ? `No events found for "${search}".` : 'Check back soon for new events and workshops!'}
             </Text>
             {search && (
-              <Button variant="subtle" onClick={() => setSearch('')}>
-                Clear search
-              </Button>
+              <Button variant="subtle" onClick={() => setSearch('')}>Clear search</Button>
             )}
           </Stack>
         </Card>
@@ -171,23 +148,17 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
           )}
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             {filteredEvents.map((event) => {
-              const isRsvped = rsvpedEvents.has(event.id);
+              const isRsvped = rsvpedEventIds.has(event.id);
               return (
                 <Card key={event.id} shadow="sm" padding="lg" radius="md" withBorder>
                   <Stack gap="sm" h="100%">
                     <Box style={{ flex: 1 }}>
                       <Group justify="space-between" align="start" mb="xs">
-                        <Title order={4} lineClamp={2} style={{ flex: 1 }}>
-                          {event.title}
-                        </Title>
-                        {event.featured && (
-                          <Badge color="orange" variant="light">Featured</Badge>
-                        )}
+                        <Title order={4} lineClamp={2} style={{ flex: 1 }}>{event.title}</Title>
+                        {event.featured && <Badge color="orange" variant="light">Featured</Badge>}
                       </Group>
 
-                      <Text size="sm" c="dimmed" lineClamp={3} mb="md">
-                        {event.description}
-                      </Text>
+                      <Text size="sm" c="dimmed" lineClamp={3} mb="md">{event.description}</Text>
 
                       <Divider my="sm" />
 
@@ -216,16 +187,16 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
                       </Stack>
                     </Box>
 
-                    <Button 
-                      variant={isRsvped ? "light" : "filled"}
-                      color={isRsvped ? "green" : "blue"}
-                      fullWidth 
+                    <Button
+                      variant={isRsvped ? 'light' : 'filled'}
+                      color={isRsvped ? 'green' : 'blue'}
+                      fullWidth
                       radius="md"
                       leftSection={isRsvped ? <IconCheck size={16} /> : <IconTicket size={16} />}
                       onClick={() => handleRsvpClick(event)}
                       disabled={isRsvped}
                     >
-                      {isRsvped ? "RSVP'd" : "RSVP"}
+                      {isRsvped ? "RSVP'd" : 'RSVP'}
                     </Button>
                   </Stack>
                 </Card>
@@ -235,11 +206,11 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
         </>
       )}
 
-      <Modal 
-        opened={opened} 
-        onClose={() => !rsvpLoading && close()} 
-        title={rsvpError === 'profile' ? "Profile Required" : "Verify RSVP"}
-        centered 
+      <Modal
+        opened={opened}
+        onClose={() => !rsvpLoading && close()}
+        title={rsvpError === 'profile' ? 'Profile Required' : 'Verify RSVP'}
+        centered
         withCloseButton={!rsvpLoading}
       >
         <Stack align="center" py="md">
@@ -249,7 +220,6 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
               <Text ta="center" fw={500}>Complete Your Profile</Text>
               <Text size="sm" c="dimmed" ta="center">
                 You need to complete your profile before you can RSVP to events.
-                This helps us personalize your experience and accommodate your needs.
               </Text>
               <Group mt="md" style={{ width: '100%' }}>
                 <Button variant="subtle" onClick={close} style={{ flex: 1 }}>Cancel</Button>
@@ -268,10 +238,10 @@ export function UpcomingEventsView({ getEvents, onRsvp, onRefresh }: UpcomingEve
             </>
           ) : (
             <>
-              <Turnstile 
-                siteKey={config.turnstileSiteKey} 
-                options={{ size: 'flexible' }} 
-                onSuccess={handleTurnstileSuccess} 
+              <Turnstile
+                siteKey={config.turnstileSiteKey}
+                options={{ size: 'flexible' }}
+                onSuccess={handleTurnstileSuccess}
               />
               <Text size="xs" c="dimmed">Security Check</Text>
             </>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Alert, Button, Collapse, Code, Group, Stack, Text } from '@mantine/core';
-import { IconAlertCircle, IconChevronDown, IconChevronUp, IconMail } from '@tabler/icons-react';
+import { Alert, Anchor, Collapse, Code, Group, Stack, Text } from '@mantine/core';
+import { IconAlertCircle, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { ApiError } from '../../common/utils/apiError';
 
 interface ApiErrorAlertProps {
@@ -38,45 +38,43 @@ export function ApiErrorAlert({ error, onClose }: ApiErrorAlertProps) {
       color="red"
       withCloseButton={!!onClose}
       onClose={onClose}
+      style={{ width: '100%' }}
     >
-      <Stack gap="xs">
-        <Text size="sm">{message}</Text>
+      <Stack gap="sm">
+        <Text size="sm" style={{ wordBreak: 'break-word' }}>{message}</Text>
 
         {requestId && (
-          <>
-            <Button
-              variant="subtle"
-              color="red"
+          <Stack gap={4}>
+            <Anchor
+              component="button"
               size="xs"
-              p={0}
-              h="auto"
-              rightSection={detailsOpen ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
+              c="red"
+              underline="hover"
               onClick={() => setDetailsOpen((o) => !o)}
-              style={{ alignSelf: 'flex-start' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
+              {detailsOpen ? <IconChevronUp size={11} /> : <IconChevronDown size={11} />}
               {detailsOpen ? 'Hide details' : 'Show details'}
-            </Button>
+            </Anchor>
             <Collapse in={detailsOpen}>
-              <Group gap="xs" align="center">
-                <Text size="xs" c="dimmed">Request ID:</Text>
-                <Code>{requestId}</Code>
+              <Group gap="xs" align="center" wrap="nowrap">
+                <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>Request ID:</Text>
+                <Code style={{ wordBreak: 'break-all', fontSize: '0.7rem' }}>{requestId}</Code>
               </Group>
             </Collapse>
-          </>
+          </Stack>
         )}
 
-        <Button
-          variant="subtle"
-          color="red"
+        <Anchor
+          component="button"
           size="xs"
-          p={0}
-          h="auto"
-          leftSection={<IconMail size={12} />}
+          c="red"
+          underline="hover"
           onClick={handleReport}
-          style={{ alignSelf: 'flex-start' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
         >
-          Report Error
-        </Button>
+          Report this error
+        </Anchor>
       </Stack>
     </Alert>
   );

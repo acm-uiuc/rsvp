@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { RsvpProfile } from '../../common/types/rsvp';
 import { config } from '../../config';
-import { useAuth } from '../../components/AuthContext';
-import { apiCache, CacheTTL } from '../../common/utils/apiCache';
+import { useAuth } from '../AuthContext';
 import { ApiError, ApiRequestError, toApiError } from '../../common/utils/apiError';
+import { Configuration, RSVPApi, GenericApi, ResponseError } from '@acm-uiuc/core-client';
 
 interface ProfileContextValue {
   profile: RsvpProfile | null;
@@ -31,64 +31,51 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const authToken = await getToken();
-
-      if (!authToken) {
+      const xUiucToken = await getToken();
+      if (!xUiucToken) {
         setProfile(null);
         return;
-        }
+      }
 
-      if (!syncChecked.current && authToken) {
+      const sdkConfig = new Configuration({ basePath: config.apiBaseUrl });
+
+      if (!syncChecked.current) {
         syncChecked.current = true;
         try {
-          const syncRes = await fetch(config.apiBaseUrl + '/api/v1/syncIdentity/isRequired', {
-            headers: { 'x-uiuc-token': authToken },
-          });
-          const { syncRequired } = await syncRes.json();
+          const genericApi = new GenericApi(sdkConfig);
+          const { syncRequired } = await genericApi.apiV1SyncIdentityIsRequiredGet({ xUiucToken });
           if (syncRequired) {
-            await fetch(config.apiBaseUrl + '/api/v1/syncIdentity', {
-              method: 'POST',
-              headers: { 'x-uiuc-token': authToken },
-            });
-            apiCache.invalidate('profile:me');
+            await genericApi.apiV1SyncIdentityPost({ xUiucToken });
           }
         } catch (syncErr) {
           console.error('Identity sync check failed:', syncErr);
         }
       }
 
-      const data = await apiCache.getOrFetch(
-        'profile:me',
-        async () => {
-          const response = await fetch(config.apiBaseUrl + '/api/v1/rsvp/profile/me', {
-            headers: { 'x-uiuc-token': authToken || '' },
-          });
-          
-          if (response.status === 404) {
-            return null;
+      const rsvpApi = new RSVPApi(sdkConfig);
+      try {
+        const data = await rsvpApi.apiV1RsvpProfileMeGet({ xUiucToken });
+        setProfile(data as unknown as RsvpProfile);
+      } catch (err) {
+        if (err instanceof ResponseError) {
+          const { status, headers } = err.response;
+          const requestId = headers.get('x-request-id') ?? undefined;
+          if (status === 404) {
+            setProfile(null);
+            return;
           }
-
-          const requestId = response.headers.get('x-request-id') ?? undefined;
-
-          if (response.status === 400) {
-            throw new ApiRequestError(`Profile Has Not Been Provisioned Yet`, 'Must Create Profile');
+          if (status === 400) {
+            throw new ApiRequestError('Profile Has Not Been Provisioned Yet', 'Must Create Profile');
           }
-
-          if (!response.ok) {
-            throw new ApiRequestError(
-              `Failed to fetch profile (Status: ${response.status})`,
-              'Failed to Load Profile',
-              requestId,
-            );
-          }
-          
-          return await response.json();
-        },
-        CacheTTL.MEDIUM
-      );
-      
-      setProfile(data);
-    } catch (err: unknown) {
+          throw new ApiRequestError(
+            `Failed to fetch profile (Status: ${status})`,
+            'Failed to Load Profile',
+            requestId,
+          );
+        }
+        throw err;
+      }
+    } catch (err) {
       setProfile(null);
       setError(toApiError(err));
     } finally {

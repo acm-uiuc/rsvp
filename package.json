@@ -15,6 +15,7 @@
     "test": "npm run typecheck && npm run lint"
   },
   "dependencies": {
+    "@acm-uiuc/core-client": "^4.8.2",
     "@acm-uiuc/js-shared": "^3.8.1",
     "@azure/msal-browser": "^4.28.0",
     "@azure/msal-react": "^3.0.24",

@@ -1,12 +1,17 @@
 import { useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../../components/Layout';
-import { config } from '../../config';
 import { useAuth } from '../../components/AuthContext';
 import { useProfile } from '../../components/ProfileContext';
 import { MyProfileView } from './MyProfile.view';
 import { RsvpProfile } from '../../common/types/rsvp';
-import { apiCache } from '../../common/utils/apiCache';
+import {
+  Configuration,
+  RSVPApi,
+  ResponseError,
+  ApiV1RsvpProfilePostRequest,
+} from '@acm-uiuc/core-client';
+import { config } from '../../config';
 
 export function MyProfilePage() {
   const navigate = useNavigate();
@@ -18,47 +23,43 @@ export function MyProfilePage() {
 
   useEffect(() => {
     if (!loading && !profile && !isFirstTime && isLoggedIn) {
-      navigate("/profile?firstTime=true", { replace: true });
+      navigate('/profile?firstTime=true', { replace: true });
     }
   }, [loading, profile, isFirstTime, isLoggedIn, navigate]);
 
   const updateProfile = useCallback(
     async (profileData: Omit<RsvpProfile, 'updatedAt'>, turnstileToken: string) => {
-      const authToken = await getToken();
+      const xUiucToken = await getToken();
+      const api = new RSVPApi(new Configuration({ basePath: config.apiBaseUrl }));
 
-      const response = await fetch(config.apiBaseUrl + '/api/v1/rsvp/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-uiuc-token': authToken || '',
-          'x-turnstile-response': turnstileToken,
-        },
-        body: JSON.stringify(profileData),
-      });
+      try {
+        const raw = await api.apiV1RsvpProfilePostRaw({
+          xUiucToken: xUiucToken || '',
+          xTurnstileResponse: turnstileToken,
+          apiV1RsvpProfilePostRequest: profileData as ApiV1RsvpProfilePostRequest,
+        });
+        if (!raw.raw.ok) throw new Error('Unexpected response');
+      } catch (err) {
+        if (err instanceof ResponseError) {
+          const { status } = err.response;
+          let errText = '';
+          try { errText = await err.response.text(); } catch { /* ignore */ }
 
-      if (!response.ok) {
-        const errData = await response.text();
-        
-        if (response.status === 400) {
-          try {
-            const errorJson = JSON.parse(errData);
-            if (errorJson.message) {
-              throw new Error(errorJson.message);
+          if (status === 400) {
+            try {
+              const errorJson = JSON.parse(errText);
+              if (errorJson.message) throw new Error(errorJson.message);
+            } catch (parseError) {
+              if (parseError instanceof Error && parseError.message !== errText) throw parseError;
+              throw new Error(errText || 'Invalid profile data. Please check your entries.');
             }
-          } catch (parseError) {
-            throw new Error(errData || 'Invalid profile data. Please check your entries.');
           }
+          if (status === 403) throw new Error('You do not have permission to update this profile.');
+          throw new Error(errText || 'Failed to update profile');
         }
-        
-        if (response.status === 403) {
-          throw new Error('You do not have permission to update this profile.');
-        }
-        
-        throw new Error(errData || 'Failed to update profile');
+        throw err;
       }
 
-      apiCache.invalidate('profile:me');
-      apiCache.invalidatePattern(/^profile:/);
       await refetchProfile();
     },
     [getToken, refetchProfile]

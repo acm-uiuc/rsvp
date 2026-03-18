@@ -4,16 +4,6 @@ export interface ApiError {
   requestId?: string;
 }
 
-const STATUS_TITLES: Record<number, string> = {
-  400: 'Pending Provision',
-  401: 'Unauthorized',
-  403: 'Permission Denied',
-  404: 'Not Found',
-  409: 'Conflict',
-  429: 'Too Many Requests',
-  500: 'Server Error',
-  503: 'Service Unavailable',
-};
 
 export class ApiRequestError extends Error {
   readonly title: string;
@@ -34,27 +24,18 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function parseApiError(response: Response, fallbackTitle = 'Request Failed'): Promise<ApiError> {
-  console.log("HELLO " + response)
-  const requestId = response.headers.get('X-Request-Id') ?? undefined;
-  const title = STATUS_TITLES[response.status] ?? fallbackTitle;
-
-  let message = `An error occurred (Status: ${response.status})`;
+/**
+ * Parses a raw response body string, extracting a human-readable message
+ * from JSON payloads instead of returning the raw JSON string.
+ */
+export function parseBodyText(raw: string): string {
+  if (!raw) return '';
   try {
-    const text = await response.text();
-    if (text) {
-      try {
-        const json = JSON.parse(text);
-        message = json.message || json.error || text;
-      } catch {
-        message = text;
-      }
-    }
+    const json = JSON.parse(raw);
+    return json.message || json.error || raw;
   } catch {
-    // keep default
+    return raw;
   }
-
-  return { title, message, requestId };
 }
 
 export function toApiError(err: unknown): ApiError {
