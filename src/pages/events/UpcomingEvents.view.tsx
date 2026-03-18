@@ -13,15 +13,13 @@ import {
 import { notifications } from '@mantine/notifications';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
-import { ApiErrorAlert } from '../../components/ApiErrorAlert';
-import { ApiError, ApiRequestError, toApiError } from '../../common/utils/apiError';
+import { ApiRequestError, toApiError } from '../../common/utils/apiError';
+import { showApiErrorNotification } from '../../common/utils/notifyError';
 
 interface UpcomingEventsViewProps {
   events: Event[];
   rsvpedEventIds: Set<string>;
   loading: boolean;
-  loadError: ApiError | null;
-  onLoadErrorClose: () => void;
   onRsvp: (event: Event, turnstileToken: string) => Promise<void>;
   onRefresh: () => void;
 }
@@ -30,8 +28,6 @@ export function UpcomingEventsView({
   events,
   rsvpedEventIds,
   loading,
-  loadError,
-  onLoadErrorClose,
   onRsvp,
   onRefresh,
 }: UpcomingEventsViewProps) {
@@ -41,7 +37,7 @@ export function UpcomingEventsView({
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
-  const [rsvpError, setRsvpError] = useState<ApiError | 'profile' | null>(null);
+  const [profileRequired, setProfileRequired] = useState(false);
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -55,14 +51,13 @@ export function UpcomingEventsView({
 
   const handleRsvpClick = (event: Event) => {
     setSelectedEvent(event);
-    setRsvpError(null);
+    setProfileRequired(false);
     open();
   };
 
   const handleTurnstileSuccess = async (token: string) => {
     if (!selectedEvent) return;
     setRsvpLoading(true);
-    setRsvpError(null);
 
     try {
       await onRsvp(selectedEvent, token);
@@ -74,9 +69,10 @@ export function UpcomingEventsView({
       });
     } catch (e: unknown) {
       if (e instanceof ApiRequestError && e.isProfileRequired) {
-        setRsvpError('profile');
+        setProfileRequired(true);
       } else {
-        setRsvpError(toApiError(e));
+        close();
+        showApiErrorNotification(toApiError(e));
       }
     } finally {
       setRsvpLoading(false);
@@ -118,8 +114,6 @@ export function UpcomingEventsView({
         />
       </Stack>
 
-      <ApiErrorAlert error={loadError} onClose={onLoadErrorClose} />
-
       {loading ? (
         <Group justify="center" py="xl">
           <Loader size="lg" type="dots" />
@@ -148,7 +142,7 @@ export function UpcomingEventsView({
           )}
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             {filteredEvents.map((event) => {
-              const isRsvped = rsvpedEventIds.has(event.id);
+              const isRsvped = rsvpedEventIds.has(event.id); 
               return (
                 <Card key={event.id} shadow="sm" padding="lg" radius="md" withBorder>
                   <Stack gap="sm" h="100%">
@@ -209,12 +203,12 @@ export function UpcomingEventsView({
       <Modal
         opened={opened}
         onClose={() => !rsvpLoading && close()}
-        title={rsvpError === 'profile' ? 'Profile Required' : 'Verify RSVP'}
+        title={profileRequired ? 'Profile Required' : 'Verify RSVP'}
         centered
         withCloseButton={!rsvpLoading}
       >
         <Stack align="center" py="md">
-          {rsvpError === 'profile' ? (
+          {profileRequired ? (
             <>
               <IconAlertCircle size={48} color="orange" />
               <Text ta="center" fw={500}>Complete Your Profile</Text>
@@ -225,11 +219,6 @@ export function UpcomingEventsView({
                 <Button variant="subtle" onClick={close} style={{ flex: 1 }}>Cancel</Button>
                 <Button onClick={handleProfileSetup} style={{ flex: 1 }}>Complete Profile</Button>
               </Group>
-            </>
-          ) : rsvpError ? (
-            <>
-              <ApiErrorAlert error={rsvpError} />
-              <Button onClick={close} fullWidth mt="md">Close</Button>
             </>
           ) : rsvpLoading ? (
             <>

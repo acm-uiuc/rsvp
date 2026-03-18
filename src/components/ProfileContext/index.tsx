@@ -55,7 +55,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const rsvpApi = new RSVPApi(sdkConfig);
       try {
         const data = await rsvpApi.apiV1RsvpProfileMeGet({ xUiucToken });
-        setProfile(data as unknown as RsvpProfile);
+        setProfile(data);
       } catch (err) {
         if (err instanceof ResponseError) {
           const { status, headers } = err.response;

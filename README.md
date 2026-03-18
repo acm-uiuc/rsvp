@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# ACM @ UIUC — RSVP Portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend for the ACM @ UIUC event RSVP system. Built with React, TypeScript, Vite, and Mantine UI.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** + **TypeScript**
+- **Vite** — dev server and bundler
+- **Mantine v8** — UI components and notifications
+- **`@acm-uiuc/core-client`** — typed SDK for the Core API
+- **`@azure/msal-react`** — Microsoft SSO authentication
+- **Cloudflare Turnstile** — bot protection on RSVP/cancel/profile actions
+- **React Router v7** — client-side routing
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+yarn install
+yarn dev        # local-dev (points to QA API)
+yarn dev:qa     # dev build against QA API
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Build
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+yarn build          # production build
+yarn build:dev      # dev environment build
+yarn build:prod     # production environment build
+yarn typecheck      # type-check without emitting
 ```
+
+## Environments
+
+Configured in `src/config.ts` via `VITE_RUN_ENVIRONMENT`:
+
+| Environment | Value       | API                              |
+|-------------|-------------|----------------------------------|
+| Local dev   | `local-dev` | `core.aws.qa.acmuiuc.org`        |
+| QA/Dev      | `dev`       | `core.aws.qa.acmuiuc.org`        |
+| Production  | `prod`      | `core.acm.illinois.edu`          |
+
+## Project Structure
+
+```
+src/
+├── common/
+│   ├── types/          # Shared types (re-exported from SDK + enrichment types)
+│   └── utils/          # apiError, notifyError helpers
+├── components/
+│   ├── AuthContext/    # MSAL auth provider + useAuth()
+│   ├── EventsContext/  # Fetches all events on mount; useEvents()
+│   ├── ProfileContext/ # Fetches RSVP profile after auth; useProfile()
+│   ├── RsvpsContext/   # Fetches user RSVPs, enriches with event data; useRsvps()
+│   ├── Layout/         # MainLayout shell
+│   └── Logo/
+├── pages/
+│   ├── events/         # Upcoming events list + RSVP flow
+│   ├── rsvps/          # My RSVPs (view, cancel)
+│   ├── profile/        # RSVP profile create/edit
+│   └── Home.page.tsx   # Dashboard
+└── App.tsx / Router.tsx / main.tsx
+```
+
+## Architecture Notes
+
+- **Context-based caching** — `EventsContext`, `ProfileContext`, and `RsvpsContext` each fetch once and expose a `refetch()` for manual refresh. Provider order in `main.tsx`: `Auth → Events → Profile → RSVPs`.
+- **SDK usage** — all API calls go through `@acm-uiuc/core-client`. Auth tokens (`xUiucToken`) and Turnstile tokens (`xTurnstileResponse`) are passed as typed request parameters, not headers.
+- **Empty-body responses** — RSVP POST and DELETE return 201/200 with empty bodies. Use the `Raw` SDK variant (`apiV1Rsvp...Raw`) and skip `.value()` to avoid JSON parse errors.
+- **Error notifications** — all errors surface via `showApiErrorNotification()` (`src/common/utils/notifyError.tsx`) which shows a Mantine notification with the error title, message, optional request ID, and a mailto report link.

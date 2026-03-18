@@ -11,15 +11,13 @@ import {
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { config } from '../../config';
-import { ApiErrorAlert } from '../../components/ApiErrorAlert';
-import { ApiError, toApiError } from '../../common/utils/apiError';
+import { toApiError } from '../../common/utils/apiError';
+import { showApiErrorNotification } from '../../common/utils/notifyError';
 import { EnrichedRsvp } from '../../common/types/rsvp';
 
 interface MyRsvpsViewProps {
   rsvps: EnrichedRsvp[];
   loading: boolean;
-  loadError: ApiError | null;
-  onLoadErrorClose: () => void;
   onCancelRsvp: (eventId: string, turnstileToken: string) => Promise<void>;
   navigateEvents: () => void;
   onRefresh: () => void;
@@ -28,8 +26,6 @@ interface MyRsvpsViewProps {
 export function MyRsvpsView({
   rsvps,
   loading,
-  loadError,
-  onLoadErrorClose,
   onCancelRsvp,
   navigateEvents,
   onRefresh,
@@ -40,12 +36,10 @@ export function MyRsvpsView({
   const [cancelModalOpened, { open: openCancelModal, close: closeCancelModal }] = useDisclosure(false);
   const [selectedRsvp, setSelectedRsvp] = useState<EnrichedRsvp | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [cancelError, setCancelError] = useState<ApiError | null>(null);
   const [cancelConfirmed, setCancelConfirmed] = useState(false);
 
   const handleOpenCancelModal = (rsvp: EnrichedRsvp) => {
     setSelectedRsvp(rsvp);
-    setCancelError(null);
     setCancelConfirmed(false);
     openCancelModal();
   };
@@ -59,7 +53,6 @@ export function MyRsvpsView({
   const handleTurnstileSuccess = async (token: string) => {
     if (!selectedRsvp) return;
     setCancelLoading(true);
-    setCancelError(null);
 
     try {
       await onCancelRsvp(selectedRsvp.eventId, token);
@@ -70,7 +63,8 @@ export function MyRsvpsView({
         color: 'green',
       });
     } catch (e: unknown) {
-      setCancelError(toApiError(e));
+      closeCancelModal();
+      showApiErrorNotification(toApiError(e));
     } finally {
       setCancelLoading(false);
     }
@@ -137,8 +131,6 @@ export function MyRsvpsView({
           radius="md"
         />
       </Stack>
-
-      <ApiErrorAlert error={loadError} onClose={onLoadErrorClose} />
 
       {loading ? (
         <Group justify="center" py="xl">
@@ -340,12 +332,7 @@ export function MyRsvpsView({
         withCloseButton={!cancelLoading}
       >
         <Stack py="md">
-          {cancelError ? (
-            <>
-              <ApiErrorAlert error={cancelError} />
-              <Button onClick={handleCancelModalClose} fullWidth mt="md">Close</Button>
-            </>
-          ) : cancelLoading ? (
+          {cancelLoading ? (
             <Stack align="center" gap="md">
               <Loader size="lg" />
               <Text size="sm" c="dimmed">Cancelling your RSVP...</Text>

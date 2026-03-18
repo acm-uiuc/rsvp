@@ -1,14 +1,1 @@
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  locationLink?: string;
-  host: string;
-  start: string;
-  end?: string;
-  featured: boolean;
-  rsvpEnabled: boolean;
-  repeats?: string;
-  imageUrl?: string;
-}
+export type { ApiV1EventsGet200ResponseInner as Event } from '@acm-uiuc/core-client';

@@ -3,17 +3,12 @@ import { config } from '../../config';
 import { useAuth } from '../AuthContext';
 import { useEvents } from '../EventsContext';
 import { Event } from '../../common/types/event';
-import { EnrichedRsvp } from '../../common/types/rsvp';
+import { EnrichedRsvp, RsvpItem } from '../../common/types/rsvp';
 import { ApiError, toApiError } from '../../common/utils/apiError';
-import {
-  Configuration,
-  RSVPApi,
-  ResponseError,
-  ApiV1RsvpEventEventIdGet200ResponseInner,
-} from '@acm-uiuc/core-client';
+import { Configuration, RSVPApi, ResponseError } from '@acm-uiuc/core-client';
 
 function buildEnrichedRsvps(
-  rawRsvps: ApiV1RsvpEventEventIdGet200ResponseInner[],
+  rawRsvps: RsvpItem[],
   events: Event[]
 ): EnrichedRsvp[] {
   const eventsMap: Record<string, Event> = {};
@@ -66,7 +61,7 @@ export function RsvpsProvider({ children }: { children: ReactNode }) {
   const { getToken, isLoggedIn } = useAuth();
   const { events, loading: eventsLoading } = useEvents();
 
-  const [rawRsvps, setRawRsvps] = useState<ApiV1RsvpEventEventIdGet200ResponseInner[]>([]);
+  const [rawRsvps, setRawRsvps] = useState<RsvpItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
@@ -85,7 +80,7 @@ export function RsvpsProvider({ children }: { children: ReactNode }) {
       const api = new RSVPApi(new Configuration({ basePath: config.apiBaseUrl }));
       const data = await api.apiV1RsvpMeGet({ xUiucToken }).catch(async (err) => {
         if (err instanceof ResponseError && err.response.status === 400) {
-          return [] as ApiV1RsvpEventEventIdGet200ResponseInner[];
+          return [] as RsvpItem[];
         }
         throw err;
       });

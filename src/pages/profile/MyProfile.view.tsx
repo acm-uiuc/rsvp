@@ -15,14 +15,14 @@ import { notifications } from '@mantine/notifications';
 import { config } from '../../config';
 import { RsvpProfile, COMMON_INTERESTS } from '../../common/types/rsvp';
 import { ALL_MAJORS } from '@acm-uiuc/js-shared';
-import { ApiErrorAlert } from '../../components/ApiErrorAlert';
+import { showApiErrorNotification } from '../../common/utils/notifyError';
 import type { ApiError } from '../../common/utils/apiError';
 
 interface MyProfileViewProps {
   profile: RsvpProfile | null;
   loading: boolean;
   error: ApiError | null;
-  updateProfile: (profile: Omit<RsvpProfile, 'updatedAt'>, turnstileToken: string) => Promise<void>;
+  updateProfile: (profile: RsvpProfile, turnstileToken: string) => Promise<void>;
   isFirstTime: boolean;
 }
 
@@ -49,13 +49,12 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
 
-  const [errorDismissed, setErrorDismissed] = useState(false);
   const [opened, { open, close }] = useDisclosure(false);
   const [welcomeOpened, { close: closeWelcome }] = useDisclosure(isFirstTime);
   const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
-    if (error) setErrorDismissed(false);
+    if (error) showApiErrorNotification(error);
   }, [error]);
 
   useEffect(() => {
@@ -118,9 +117,9 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
       await updateProfile(
         {
           gradYear: parseInt(gradYear, 10),
-          gradMonth: gradMonth,
-          expectedDegree: degree,
-          intendedMajor,
+          gradMonth: gradMonth as RsvpProfile['gradMonth'],
+          expectedDegree: degree as RsvpProfile['expectedDegree'],
+          intendedMajor: intendedMajor as RsvpProfile['intendedMajor'],
           interests,
           dietaryRestrictions,
         },
@@ -207,10 +206,6 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
             </Group>
             <Progress value={getProfileCompletion()} size="sm" radius="xl" />
           </Card>
-        )}
-
-        {!errorDismissed && (
-          <ApiErrorAlert error={error} onClose={() => setErrorDismissed(true)} />
         )}
 
         {loading ? (
@@ -357,13 +352,6 @@ export function MyProfileView({ profile, loading, error, updateProfile, isFirstT
                     </Group>
                   </Box>
 
-                  {profile?.updatedAt && (
-                    <Text size="xs" c="dimmed" mt="md">
-                      Last updated: {new Date(profile.updatedAt).toLocaleDateString('en-US', {
-                        month: 'long', day: 'numeric', year: 'numeric'
-                      })}
-                    </Text>
-                  )}
                 </>
               )}
             </Stack>

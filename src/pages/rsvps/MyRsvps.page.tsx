@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { MainLayout } from '../../components/Layout';
 import { useAuth } from '../../components/AuthContext';
 import { useProfile } from '../../components/ProfileContext';
@@ -6,6 +6,7 @@ import { useRsvps } from '../../components/RsvpsContext';
 import { useNavigate } from 'react-router-dom';
 import { MyRsvpsView } from './MyRsvps.view';
 import { ApiRequestError, parseBodyText } from '../../common/utils/apiError';
+import { showApiErrorNotification } from '../../common/utils/notifyError';
 import { Configuration, RSVPApi, ResponseError } from '@acm-uiuc/core-client';
 import { config } from '../../config';
 
@@ -15,8 +16,9 @@ export function MyRsvpsPage() {
   const { rsvps, loading, error: rsvpsError, refetch: refetchRsvps } = useRsvps();
   const navigate = useNavigate();
 
-  const [errorHidden, setErrorHidden] = useState(false);
-  useEffect(() => { if (rsvpsError) setErrorHidden(false); }, [rsvpsError]);
+  useEffect(() => {
+    if (rsvpsError) showApiErrorNotification(rsvpsError);
+  }, [rsvpsError]);
 
   useEffect(() => {
     if (!profileLoading && !profile) {
@@ -58,8 +60,6 @@ export function MyRsvpsPage() {
       <MyRsvpsView
         rsvps={rsvps}
         loading={loading}
-        loadError={errorHidden ? null : rsvpsError}
-        onLoadErrorClose={() => setErrorHidden(true)}
         onCancelRsvp={handleCancel}
         navigateEvents={() => navigate('/events')}
         onRefresh={refetchRsvps}

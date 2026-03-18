@@ -29,7 +29,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     try {
       const api = new EventsApi(new Configuration({ basePath: config.apiBaseUrl }));
       const data = await api.apiV1EventsGet();
-      setEvents(data as unknown as Event[]);
+      setEvents(data);
     } catch (err) {
       setError(toApiError(err));
     } finally {

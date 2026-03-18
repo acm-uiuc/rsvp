@@ -28,7 +28,7 @@ export function MyProfilePage() {
   }, [loading, profile, isFirstTime, isLoggedIn, navigate]);
 
   const updateProfile = useCallback(
-    async (profileData: Omit<RsvpProfile, 'updatedAt'>, turnstileToken: string) => {
+    async (profileData: RsvpProfile, turnstileToken: string) => {
       const xUiucToken = await getToken();
       const api = new RSVPApi(new Configuration({ basePath: config.apiBaseUrl }));
 

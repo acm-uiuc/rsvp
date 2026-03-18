@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { MainLayout } from '../../components/Layout';
 import { Event } from '../../common/types/event';
 import { config } from '../../config';
@@ -7,6 +7,7 @@ import { useEvents } from '../../components/EventsContext';
 import { useRsvps } from '../../components/RsvpsContext';
 import { UpcomingEventsView } from './UpcomingEvents.view';
 import { ApiRequestError, parseBodyText } from '../../common/utils/apiError';
+import { showApiErrorNotification } from '../../common/utils/notifyError';
 import { Configuration, RSVPApi, ResponseError } from '@acm-uiuc/core-client';
 
 export function UpcomingEventsPage() {
@@ -14,8 +15,9 @@ export function UpcomingEventsPage() {
   const { events, loading, error: eventsError, refetch: refetchEvents } = useEvents();
   const { rsvps, refetch: refetchRsvps } = useRsvps();
 
-  const [errorHidden, setErrorHidden] = useState(false);
-  useEffect(() => { if (eventsError) setErrorHidden(false); }, [eventsError]);
+  useEffect(() => {
+    if (eventsError) showApiErrorNotification(eventsError);
+  }, [eventsError]);
 
   const rsvpedEventIds = useMemo(() => new Set(rsvps.map(r => r.eventId)), [rsvps]);
 
@@ -71,8 +73,6 @@ export function UpcomingEventsPage() {
         events={rsvpEvents}
         rsvpedEventIds={rsvpedEventIds}
         loading={loading}
-        loadError={errorHidden ? null : eventsError}
-        onLoadErrorClose={() => setErrorHidden(true)}
         onRsvp={handleRsvp}
         onRefresh={refetchEvents}
       />
