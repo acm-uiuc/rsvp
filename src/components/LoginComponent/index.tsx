@@ -34,17 +34,6 @@ export function LoginComponent(props: PaperProps) {
         </Text>
       </Center>
 
-      <Alert
-        title={<Title order={5}>Authorized Users Only</Title>}
-        icon={<IconLock />}
-        color="#0053B3"
-      >
-        <Text size="sm">
-          Unauthorized or improper use or access of this system may result in
-          disciplinary action, as well as civil and criminal penalties.
-        </Text>
-      </Alert>
-
       <Group grow mb="md" mt="md">
         <AcmLoginButton radius="xl" returnTo={returnTo || "/"}>
           Sign in with Illinois NetID

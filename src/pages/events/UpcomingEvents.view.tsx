@@ -38,6 +38,7 @@ export function UpcomingEventsView({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [profileRequired, setProfileRequired] = useState(false);
+  const [rsvpConfirmed, setRsvpConfirmed] = useState(false);
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -52,6 +53,7 @@ export function UpcomingEventsView({
   const handleRsvpClick = (event: Event) => {
     setSelectedEvent(event);
     setProfileRequired(false);
+    setRsvpConfirmed(false);
     open();
   };
 
@@ -203,13 +205,13 @@ export function UpcomingEventsView({
       <Modal
         opened={opened}
         onClose={() => !rsvpLoading && close()}
-        title={profileRequired ? 'Profile Required' : 'Verify RSVP'}
+        title={profileRequired ? 'Profile Required' : 'RSVP'}
         centered
         withCloseButton={!rsvpLoading}
       >
-        <Stack align="center" py="md">
+        <Stack py="md">
           {profileRequired ? (
-            <>
+            <Stack align="center">
               <IconAlertCircle size={48} color="orange" />
               <Text ta="center" fw={500}>Complete Your Profile</Text>
               <Text size="sm" c="dimmed" ta="center">
@@ -219,21 +221,31 @@ export function UpcomingEventsView({
                 <Button variant="subtle" onClick={close} style={{ flex: 1 }}>Cancel</Button>
                 <Button onClick={handleProfileSetup} style={{ flex: 1 }}>Complete Profile</Button>
               </Group>
-            </>
+            </Stack>
           ) : rsvpLoading ? (
-            <>
+            <Stack align="center">
               <Loader size="lg" />
               <Text size="sm" c="dimmed">Processing your RSVP...</Text>
+            </Stack>
+          ) : !rsvpConfirmed ? (
+            <>
+              <Text size="sm" ta="center" mb="md">
+                Confirm your RSVP for <strong>{selectedEvent?.title}</strong>?
+              </Text>
+              <Group grow>
+                <Button variant="default" onClick={close}>Cancel</Button>
+                <Button onClick={() => setRsvpConfirmed(true)}>Confirm RSVP</Button>
+              </Group>
             </>
           ) : (
-            <>
+            <Stack align="center">
+              <Text size="sm" c="dimmed">Complete the security check to confirm.</Text>
               <Turnstile
                 siteKey={config.turnstileSiteKey}
                 options={{ size: 'flexible' }}
                 onSuccess={handleTurnstileSuccess}
               />
-              <Text size="xs" c="dimmed">Security Check</Text>
-            </>
+            </Stack>
           )}
         </Stack>
       </Modal>

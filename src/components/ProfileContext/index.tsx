@@ -60,12 +60,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (err instanceof ResponseError) {
           const { status, headers } = err.response;
           const requestId = headers.get('x-request-id') ?? undefined;
-          if (status === 404) {
+          if (status === 404 || status === 400) {
             setProfile(null);
             return;
-          }
-          if (status === 400) {
-            throw new ApiRequestError('Profile Has Not Been Provisioned Yet', 'Must Create Profile');
           }
           throw new ApiRequestError(
             `Failed to fetch profile (Status: ${status})`,
