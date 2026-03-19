@@ -4,10 +4,7 @@ import {
   Group,
   PaperProps,
   Center,
-  Alert,
-  Title,
 } from "@mantine/core";
-import { IconLock } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 
 import { AcmLoginButton } from "./AcmLoginButton.js";
