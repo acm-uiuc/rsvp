@@ -55,7 +55,7 @@ export function HomePage() {
   const actions = [
     { title: 'Upcoming Events', icon: IconCalendarEvent, color: 'blue', desc: 'Browse and RSVP to corporate events', path: '/events' },
     { title: 'My RSVPs', icon: IconTicket, color: 'green', desc: 'View your tickets and status', path: '/my-rsvps' },
-    { title: 'Profile', icon: IconSettings, color: 'gray', desc: 'Update your resume and dietary info', path: '/profile' },
+    { title: 'Profile', icon: IconSettings, color: 'gray', desc: 'Update your profile and dietary info', path: '/profile' },
   ];
 
   const formatTime = (dateString: string) =>
