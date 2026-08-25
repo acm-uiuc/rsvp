@@ -41,7 +41,7 @@ export const LogoBadge: React.FC<LogoBadgeProps> = ({
         <img
           src={brandImgUrl}
           alt="ACM Logo"
-          style={{ height: "3em", marginLeft: "1em", marginRight: "0.3em", marginTop: "0.3em", paddingRight: "0.5em" }}
+          style={{ height: "3em", marginRight: "0.3em", marginTop: "0.3em", paddingRight: "0.5em" }}
         />
         {showText
           ? isNonProd && runEnv
