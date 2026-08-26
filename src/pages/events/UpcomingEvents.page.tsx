@@ -56,12 +56,28 @@ export function UpcomingEventsPage() {
             text.toLowerCase().includes('complete') ||
             text.toLowerCase().includes('required')
           ) {
-            throw new ApiRequestError('Profile setup is required before RSVPing.', 'Profile Required');
+            throw new ApiRequestError(
+              'Profile setup is required before RSVPing.',
+              'Profile Required',
+              requestId,
+              true,
+            );
           }
           throw new ApiRequestError(message || 'Bad request', 'Bad Request', requestId);
         }
-        if (status === 409) throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered');
-        if (status === 403) throw new ApiRequestError('This event is at full capacity.', 'Event Full');
+        if (status === 409) {
+          // The API returns 409 both for duplicate RSVPs and for a full event,
+          // so distinguish them by the server's message.
+          if (message.toLowerCase().includes('limit')) {
+            throw new ApiRequestError(
+              'This event has reached its RSVP limit. No more spots are available.',
+              'Event Full',
+              requestId,
+            );
+          }
+          throw new ApiRequestError("You've already RSVP'd to this event.", 'Already Registered', requestId);
+        }
+        if (status === 403) throw new ApiRequestError('This event is at full capacity.', 'Event Full', requestId);
         throw new ApiRequestError(message || 'Failed to RSVP', 'Request Failed', requestId);
       }
       throw err;
