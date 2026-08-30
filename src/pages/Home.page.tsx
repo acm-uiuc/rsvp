@@ -13,8 +13,11 @@ import {
   Anchor,
   Divider,
   Box,
+  Modal,
 } from '@mantine/core';
-import { IconCalendarEvent, IconTicket, IconSettings, IconCalendar, IconClock, IconMapPin } from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
+import { IconCalendarEvent, IconTicket, IconSettings, IconCalendar, IconClock, IconMapPin, IconQrcode } from '@tabler/icons-react';
+import QRCode from 'react-qr-code';
 import { useAuth } from '../components/AuthContext';
 import { useProfile } from '../components/ProfileContext';
 import { useRsvps } from '../components/RsvpsContext';
@@ -29,6 +32,9 @@ export function HomePage() {
   const { profile, loading: profileLoading } = useProfile();
   const { rsvps, loading: rsvpsLoading } = useRsvps();
   const navigate = useNavigate();
+  const [qrOpened, { open: openQr, close: closeQr }] = useDisclosure(false);
+
+  const netId = user?.email ? user.email.split('@')[0] : '';
 
   useEffect(() => {
     if (isLoggedIn && !profileLoading && !profile) {
@@ -53,8 +59,8 @@ export function HomePage() {
   const totalActive = ongoingRsvps.length + upcomingRsvps.length;
 
   const actions = [
-    { title: 'Upcoming Events', icon: IconCalendarEvent, color: 'blue', desc: 'Browse and RSVP to corporate events', path: '/events' },
-    { title: 'My RSVPs', icon: IconTicket, color: 'green', desc: 'View your tickets and status', path: '/my-rsvps' },
+    { title: 'Upcoming Events', icon: IconCalendarEvent, color: 'blue', desc: 'Browse and RSVP to our upcoming events!', path: '/events' },
+    { title: 'My RSVPs', icon: IconTicket, color: 'green', desc: 'View your upcoming RSVPs', path: '/my-rsvps' },
     { title: 'Profile', icon: IconSettings, color: 'gray', desc: 'Update your profile and dietary info', path: '/profile' },
   ];
 
@@ -69,8 +75,31 @@ export function HomePage() {
         <Stack gap="xl">
           <div>
             <Title order={2}>Welcome back, {user?.name?.split(' ')[1] || 'Friend'}!</Title>
-            <Text c="dimmed">Select an action to get started.</Text>
           </div>
+
+          {isLoggedIn && netId && (
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group justify="space-between" wrap="nowrap" align="center">
+                <Group gap="md" wrap="nowrap" align="center">
+                  <Box p="xs" bg="white" style={{ borderRadius: 8, lineHeight: 0 }}>
+                    <QRCode value={netId} size={88} />
+                  </Box>
+                  <Box>
+                    <Group gap="xs" mb={4}>
+                      <ThemeIcon color="blue" variant="light" size="m">
+                        <IconQrcode size={24} />
+                      </ThemeIcon>
+                      <Text fw={500}>Check-In QR Code</Text>
+                    </Group>
+                    <Text size="sm" c="dimmed">Show this at events to check in.</Text>
+                  </Box>
+                </Group>
+                <Button variant="light" radius="md" onClick={openQr}>
+                  Enlarge
+                </Button>
+              </Group>
+            </Card>
+          )}
 
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
             {actions.map((item) => (
@@ -172,6 +201,15 @@ export function HomePage() {
           )}
         </Stack>
       </Container>
+
+      <Modal opened={qrOpened} onClose={closeQr} title="Check-In Code" centered size="sm">
+        <Stack align="center" gap="sm" py="md">
+          <Box p="md" bg="white" style={{ borderRadius: 8, lineHeight: 0 }}>
+            <QRCode value={netId} size={220} />
+          </Box>
+          <Text size="xs" c="dimmed">Show this at events to check in</Text>
+        </Stack>
+      </Modal>
     </MainLayout>
   );
 }
