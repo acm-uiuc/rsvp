@@ -14,6 +14,7 @@ import {
   Divider,
   Box,
   Modal,
+  Flex,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconCalendarEvent, IconTicket, IconSettings, IconCalendar, IconClock, IconMapPin, IconQrcode } from '@tabler/icons-react';
@@ -79,25 +80,41 @@ export function HomePage() {
 
           {isLoggedIn && netId && (
             <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" wrap="nowrap" align="center">
-                <Group gap="md" wrap="nowrap" align="center">
+              <Flex
+                direction={{ base: 'column', sm: 'row' }}
+                align="center"
+                justify="space-between"
+                gap="md"
+              >
+                <Flex
+                  direction={{ base: 'column', sm: 'row' }}
+                  align="center"
+                  gap="md"
+                  style={{ minWidth: 0 }}
+                >
                   <Box p="xs" bg="white" style={{ borderRadius: 8, lineHeight: 0 }}>
                     <QRCode value={netId} size={88} />
                   </Box>
-                  <Box>
-                    <Group gap="xs" mb={4}>
-                      <ThemeIcon color="blue" variant="light" size="m">
-                        <IconQrcode size={24} />
+                  <Box ta={{ base: 'center', sm: 'left' }} style={{ minWidth: 0 }}>
+                    <Flex gap="xs" align="center" justify={{ base: 'center', sm: 'flex-start' }} mb={4}>
+                      <ThemeIcon color="blue" variant="light" size="md">
+                        <IconQrcode size={18} />
                       </ThemeIcon>
                       <Text fw={500}>Check-In QR Code</Text>
-                    </Group>
+                    </Flex>
                     <Text size="sm" c="dimmed">Show this at events to check in.</Text>
                   </Box>
-                </Group>
-                <Button variant="light" radius="md" onClick={openQr}>
+                </Flex>
+                <Button
+                  variant="light"
+                  radius="md"
+                  onClick={openQr}
+                  w={{ base: '100%', sm: 'auto' }}
+                  style={{ flexShrink: 0 }}
+                >
                   Enlarge
                 </Button>
-              </Group>
+              </Flex>
             </Card>
           )}
 
@@ -204,8 +221,17 @@ export function HomePage() {
 
       <Modal opened={qrOpened} onClose={closeQr} title="Check-In Code" centered size="sm">
         <Stack align="center" gap="sm" py="md">
-          <Box p="md" bg="white" style={{ borderRadius: 8, lineHeight: 0 }}>
-            <QRCode value={netId} size={220} />
+          <Box
+            p="md"
+            bg="white"
+            style={{ borderRadius: 8, lineHeight: 0, width: '100%', maxWidth: 260 }}
+          >
+            <QRCode
+              value={netId}
+              size={256}
+              viewBox="0 0 256 256"
+              style={{ width: '100%', height: 'auto' }}
+            />
           </Box>
           <Text size="xs" c="dimmed">Show this at events to check in</Text>
         </Stack>
