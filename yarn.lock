@@ -19,29 +19,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@azure/msal-browser@npm:^5.19.0":
-  version: 5.19.0
-  resolution: "@azure/msal-browser@npm:5.19.0"
+"@azure/msal-browser@npm:^5.20.0":
+  version: 5.20.0
+  resolution: "@azure/msal-browser@npm:5.20.0"
   dependencies:
-    "@azure/msal-common": "npm:16.13.0"
-  checksum: 10c0/993a775cd51784a6729d8e58f5067454a539255334fac6f9c9bad8123d0ee04b05ef714b62b0d1d1c5bbdadcc9c3d846139ef9403d32a62f3c0b871039669e09
+    "@azure/msal-common": "npm:16.14.0"
+  checksum: 10c0/68a8afa8cdd5bff4335f3fc1f3cf03ff1890e3684186af9da07119ef7b91313778dc97f78e7ddfdaf0c93235adfdf7794d74ad4193ad1e2ce8984c09fa9e94d1
   languageName: node
   linkType: hard
 
-"@azure/msal-common@npm:16.13.0":
-  version: 16.13.0
-  resolution: "@azure/msal-common@npm:16.13.0"
-  checksum: 10c0/cc2857f24bae5ac9693760a9b23c5c6f19a86ae5df16d236e85616a545e6bb15a8b7a587df9c024b43a5386485a84b662574c42cffafef9746e56135f61f654c
+"@azure/msal-common@npm:16.14.0":
+  version: 16.14.0
+  resolution: "@azure/msal-common@npm:16.14.0"
+  checksum: 10c0/72f9786b23f727e730d24afc57fa69998be89464ed734153c36ccd0893eef4945b840a0ed0b325295fd497b633625217cebe60392b42f0bad7ad183f8bfa6bfe
   languageName: node
   linkType: hard
 
-"@azure/msal-react@npm:^5.6.0":
-  version: 5.6.0
-  resolution: "@azure/msal-react@npm:5.6.0"
+"@azure/msal-react@npm:^5.7.0":
+  version: 5.7.0
+  resolution: "@azure/msal-react@npm:5.7.0"
   peerDependencies:
-    "@azure/msal-browser": ^5.19.0
+    "@azure/msal-browser": ^5.20.0
     react: ^16.8.0 || ^17 || ^18 || ^19.2.1
-  checksum: 10c0/591ff67aa561674ae3ceeb54f62f18f853d672331b4697392528e0d4b6c3db0defe39995594b5a3600242243cb22b8d6a1190cfef05be88b12eb12d45d9b660d
+  checksum: 10c0/5776983b035b6ca9d32b20910abe239fb119cf504efae32d01cd84ae511264463d1b55c51dd41965b26bb0aa834e6861c47b80048ccc3741914f284db11f750a
   languageName: node
   linkType: hard
 
@@ -756,13 +756,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@marsidev/react-turnstile@npm:^1.6.0":
-  version: 1.6.0
-  resolution: "@marsidev/react-turnstile@npm:1.6.0"
+"@marsidev/react-turnstile@npm:^1.6.1":
+  version: 1.6.1
+  resolution: "@marsidev/react-turnstile@npm:1.6.1"
   peerDependencies:
     react: ^17.0.2 || ^18.0.0 || ^19.0
     react-dom: ^17.0.2 || ^18.0.0 || ^19.0
-  checksum: 10c0/2d9c9f337d723ae13feff7d5e6c707ef03ab83a600853305c5ea4bc175ec1fd441f2a61342285b54014ed4afc6a16a06b2e109095d0369f2160653599c644363
+  checksum: 10c0/e28c60b75a341b492426a68882c10817b9c7b8b95edc85eb6f375a7479ae7477a057f6b089301b70762f139d7222fd2ea75d7ecb8f8a7d48703e9ee39c35ef0a
   languageName: node
   linkType: hard
 
@@ -2914,21 +2914,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:^7.18.2":
-  version: 7.18.2
-  resolution: "react-router-dom@npm:7.18.2"
+"react-router-dom@npm:^7.18.3":
+  version: 7.18.3
+  resolution: "react-router-dom@npm:7.18.3"
   dependencies:
-    react-router: "npm:7.18.2"
+    react-router: "npm:7.18.3"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/234926d664a5b5c355aeb8642f505784facbb63321231428f24e5ea7fb859876443082d63eef4b8167a01ea8d8dab231a666736343c3e4a86a05b2fcb88927b5
+  checksum: 10c0/1d04bb38f64e9c429d4f162ca6c5ffc163a02c0a5c08748440a58fc0e9b1e8c8edc2bc4509e9966dcd0873e57fc6a090fd356244d581567737aac1ae6236e799
   languageName: node
   linkType: hard
 
-"react-router@npm:7.18.2":
-  version: 7.18.2
-  resolution: "react-router@npm:7.18.2"
+"react-router@npm:7.18.3":
+  version: 7.18.3
+  resolution: "react-router@npm:7.18.3"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -2938,7 +2938,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/513b04adf020fcf95124557418e003d16b175765045332858d5817b045e49dfe33b529c4871c57b0cddf24fa5432589ffc45d1a9a5b398b069f02adb755fab15
+  checksum: 10c0/77686cad916f8928e6c4aeafe5f8dc26384e84897849ff7d771ddee67af02b788c103503d029ffa442f7bf42aa47b3779440e70fc1aeae90532120fae4036b0f
   languageName: node
   linkType: hard
 
@@ -3090,13 +3090,13 @@ __metadata:
   dependencies:
     "@acm-uiuc/core-client": "npm:^4.11.0"
     "@acm-uiuc/js-shared": "npm:^3.8.3"
-    "@azure/msal-browser": "npm:^5.19.0"
-    "@azure/msal-react": "npm:^5.6.0"
+    "@azure/msal-browser": "npm:^5.20.0"
+    "@azure/msal-react": "npm:^5.7.0"
     "@eslint/js": "npm:^9.39.1"
     "@mantine/core": "npm:^9.5.2"
     "@mantine/hooks": "npm:^9.5.2"
     "@mantine/notifications": "npm:^9.5.2"
-    "@marsidev/react-turnstile": "npm:^1.6.0"
+    "@marsidev/react-turnstile": "npm:^1.6.1"
     "@tabler/icons-react": "npm:^3.46.0"
     "@tailwindcss/vite": "npm:^4.3.3"
     "@types/node": "npm:^24.10.1"
@@ -3111,7 +3111,7 @@ __metadata:
     react: "npm:^19.2.8"
     react-dom: "npm:^19.2.8"
     react-qr-code: "npm:^2.2.0"
-    react-router-dom: "npm:^7.18.2"
+    react-router-dom: "npm:^7.18.3"
     tailwindcss: "npm:^4.3.3"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.46.4"
